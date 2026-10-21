@@ -275,10 +275,10 @@ def build_mixtape():
         # 'qsin' (quarter sine equal-power) is the core curve
         # 'hpf' applies a high-pass washout on outgoing
         if mode == "filter-sweep":
-            # High-pass sweep curve (esi = exponential sine in, eso = exponential sine out)
-            curve_param = "c1=esi:c2=eso"
+            # Exponential sine washout curve on outgoing, equal-power entry on incoming
+            curve_param = "c1=esin:c2=qsin"
         elif mode == "bass-swap":
-            # Sharp equal-power crossover at midpoint
+            # Quarter-sine equal-power crossover
             curve_param = "c1=qsin:c2=qsin"
         else:
             curve_param = "c1=qsin:c2=qsin"

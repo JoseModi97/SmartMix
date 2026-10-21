@@ -56,6 +56,41 @@ You do **not** need that folder! SmartMix dynamically determines the best output
 
 ---
 
+## 💻 Environment Setup & Requirements (Install Guide)
+
+Before running SmartMix for the first time, your computer needs the following 3 tools:
+
+### 1. Python 3.10+
+- Download and install Python from [python.org](https://www.python.org/downloads/) (or via Windows Package Manager: `winget install Python.Python.3.12`).
+- **Important:** Make sure to check **"Add Python to PATH"** during installation.
+
+### 2. FFmpeg (Audio DSP & Mastering Engine)
+FFmpeg is used for 32-bit floating-point audio decoding, pitch-preserving tempo stretching, and EBU R128 mastering.
+- **Easiest install (PowerShell):**
+  ```powershell
+  winget install Gyan.FFmpeg
+  ```
+  *(Close and reopen your terminal after installation so `ffmpeg` is loaded into your PATH).*
+- Alternatively, download the full build from [gyan.dev/ffmpeg/builds](https://www.gyan.dev/ffmpeg/builds/) and add its `bin` folder to your Windows system Environment Variables.
+
+### 3. Python Audio Libraries (NumPy & SciPy)
+SmartMix relies on `numpy` (audio arrays) and `scipy` (Linkwitz-Riley crossover filters). Install them in one command:
+```bash
+pip install -r requirements.txt
+```
+
+### 4. VirtualDJ
+- Install **VirtualDJ** (2021, 2023, 2024, or 2026+). SmartMix automatically reads playlists and hotcues from `%LOCALAPPDATA%\VirtualDJ`.
+
+### 5. Verify Your Setup in 1 Second!
+Run the built-in diagnostic doctor to verify that everything is configured properly:
+```bash
+python check_setup.py
+```
+If all items show `[OK]`, your computer is 100% ready to compile mixtapes!
+
+---
+
 ## 🎧 Step-by-Step Guide: How to Add Songs & Never Get Stuck
 
 Follow these simple steps whenever you want to compile a new mixtape:
@@ -223,6 +258,8 @@ SmartMix applies broadcast-grade mastering:
 ```text
 ├── smartmix.py                       # Master unified 1-click compiler (All-in-One)
 ├── run_smartmix.bat                  # 1-Click Windows batch launcher
+├── check_setup.py                    # Environment & dependency verification doctor
+├── requirements.txt                  # Python dependencies (numpy, scipy)
 ├── generate_mixtape.py               # Core offline mix generator (Crossfade & Normal Cut)
 ├── generate_scratch_preview.py       # Standalone DJ scratch preview generator
 ├── smartmix_engine.cpp               # Native VirtualDJ C++ DSP Plugin source code

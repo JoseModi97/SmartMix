@@ -588,17 +588,26 @@ def render_crossfade_mix(tracks, args, output_file):
         # Track B's playback position for its subsequent solo / transition
         curr_in_pos = b_entry + dur_b_needed
 
-    # 3. Final Track Solo Section (plays out to full length with smooth 4s fade-out)
+    # 3. Final Track Solo Section (respects Cue 2 fade and Cue 3 finale cutoff)
     last_t = tracks[-1]
-    last_end = last_t["length"]
+    if last_t["cue_exit"] is not None and last_t["cue_exit"] > curr_in_pos:
+        last_end = last_t["cue_exit"]
+        if last_t["cue_fade"] is not None and curr_in_pos < last_t["cue_fade"] < last_end:
+            fade_dur = last_end - last_t["cue_fade"]
+        else:
+            fade_dur = min(4.0, (last_end - curr_in_pos) * 0.5)
+    else:
+        last_end = last_t["length"]
+        fade_dur = min(4.0, (last_end - curr_in_pos) * 0.5)
+
     if last_end <= curr_in_pos:
         last_end = last_t["length"]
 
     last_dur = max(0.1, last_end - curr_in_pos)
     last_audio = load_audio_clip(last_t["path"], start_s=curr_in_pos, duration_s=last_dur, sr=sr)
 
-    # Smooth 4.0s fade out on mixtape finale
-    fade_out_len = min(int(sr * 4.0), len(last_audio))
+    # Smooth fade out on mixtape finale
+    fade_out_len = min(int(sr * fade_dur), len(last_audio))
     if fade_out_len > 0:
         last_audio[-fade_out_len:] *= np.linspace(1.0, 0.0, fade_out_len)[:, None]
 

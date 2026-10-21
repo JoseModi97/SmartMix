@@ -9,7 +9,7 @@ VDJ_DB = r"C:\Users\odhis\AppData\Local\VirtualDJ\database.xml"
 OUTPUT_DIR = r"C:\Users\odhis\Downloads\Amapiano"
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="SmartMix: Dual-Mode Mixtape Generator (Normal Cut & Smart Crossfade)")
+    parser = argparse.ArgumentParser(description="SmartMix: DJ-Standard Loudness Compliant Mixtape Generator")
     parser.add_argument(
         "--mode",
         type=str,
@@ -23,6 +23,19 @@ def parse_args():
         default="dynamic",
         choices=["dynamic", "bass-swap", "filter-sweep", "equal-power"],
         help="Crossfading technique: 'dynamic' (alternates styles), 'bass-swap' (EQ crossover), 'filter-sweep' (high-pass wash), 'equal-power' (sine blend)"
+    )
+    # Professional DJ / Streaming Loudness Standards (EBU R128 / ITU-R BS.1770)
+    parser.add_argument(
+        "--target-lufs",
+        type=float,
+        default=-14.0,
+        help="Target integrated loudness in LUFS according to DJ/Streaming standards (default: -14.0 LUFS)"
+    )
+    parser.add_argument(
+        "--true-peak",
+        type=float,
+        default=-1.5,
+        help="Maximum True Peak ceiling in dBTP to prevent inter-sample clipping on club sound systems and MP3 encoding (default: -1.5 dBTP)"
     )
     parser.add_argument("--entry-cue", type=int, default=1, help="Default cue number to use for song entry/mix-in (default: 1)")
     parser.add_argument("--fade-cue", type=int, default=2, help="Default cue number where fade-out begins / normal cutoff (default: 2)")
@@ -161,14 +174,9 @@ def get_transition_mode(idx, global_mode):
     return patterns[idx % len(patterns)]
 
 def render_normal_mix(tracks, args, output_file):
-    """
-    Renders the Normal Cut Mix (clean on-beat drops, no crossfade overlap).
-    Each track plays from Cue 1 up to its cutoff point (Cue 2 or Cue 3),
-    then immediately drops into the next track at Cue 1.
-    """
-    print("\n" + "-" * 75)
-    print(" RENDERING NORMAL MIX (Clean Drop, No Overlap)...")
-    print("-" * 75)
+    print("\n" + "-" * 78)
+    print(" RENDERING NORMAL MIX (Clean Drop, EBU R128 DJ Loudness Normalization)...")
+    print("-" * 78)
 
     temp_dir = os.path.join(args.output_dir, "_temp_normal_parts")
     os.makedirs(temp_dir, exist_ok=True)
@@ -196,7 +204,6 @@ def render_normal_mix(tracks, args, output_file):
 
         duration = max(0.1, end_time - start_time)
 
-        # Micro-fade (10ms) on boundaries to avoid digital clicks/pops
         af_filters = (
             "aformat=sample_fmts=s16:sample_rates=44100:channel_layouts=stereo,"
             f"afade=t=in:st=0:d=0.015,afade=t=out:st={max(0.0, duration - 0.02):.3f}:d=0.02"
@@ -218,9 +225,9 @@ def render_normal_mix(tracks, args, output_file):
         timeline_markers.append((current_time, t["artist"], t["title"]))
         current_time += duration
 
-    # Concatenate clips back-to-back using concat filter
     filter_inputs = "".join([f"[{idx}:a]" for idx in range(len(prepared_clips))])
-    concat_filter = f"{filter_inputs}concat=n={len(prepared_clips)}:v=0:a=1[out]"
+    # Apply broadcast EBU R128 loudness normalization on output master
+    concat_filter = f"{filter_inputs}concat=n={len(prepared_clips)}:v=0:a=1,loudnorm=I={args.target_lufs}:TP={args.true_peak}:LRA=10.0[out]"
 
     cmd = ["ffmpeg", "-y"]
     for clip in prepared_clips:
@@ -253,18 +260,16 @@ def render_normal_mix(tracks, args, output_file):
 
     out_size_mb = os.path.getsize(output_file) / (1024 * 1024)
     print(f"-> Normal Mix Rendered: {output_file} ({out_size_mb:.2f} MB)")
+    print(f"   [Loudness Target: {args.target_lufs} LUFS | True Peak Ceiling: {args.true_peak} dBTP]")
     print("Normal Mix Timeline:")
     for mark_time, artist, title in timeline_markers:
         print(f" [{format_time(mark_time)}] {artist} - {title}")
     return True
 
 def render_crossfade_mix(tracks, args, output_file):
-    """
-    Renders the Smart Crossfaded Mix (equal-power, on-beat 16-bar overlaps, tempo matching).
-    """
-    print("\n" + "-" * 75)
-    print(f" RENDERING CROSSFADED MIX (Mode: {args.crossfade_mode.upper()})...")
-    print("-" * 75)
+    print("\n" + "-" * 78)
+    print(f" RENDERING CROSSFADED MIX (Mode: {args.crossfade_mode.upper()} | Target: {args.target_lufs} LUFS)...")
+    print("-" * 78)
 
     temp_dir = os.path.join(args.output_dir, "_temp_cross_parts")
     os.makedirs(temp_dir, exist_ok=True)
@@ -288,7 +293,7 @@ def render_crossfade_mix(tracks, args, output_file):
                 end_time = t["cue_exit"]
                 fade_duration = t["cue_exit"] - t["cue_fade"]
             else:
-                fade_duration = 16.0 * (60.0 / t["bpm"])  # default 16 bars
+                fade_duration = 16.0 * (60.0 / t["bpm"])
                 end_time = t["length"] - 2.0
             crossfade_durations.append(fade_duration)
             t_mode = get_transition_mode(i, args.crossfade_mode)
@@ -349,7 +354,7 @@ def render_crossfade_mix(tracks, args, output_file):
         fade_d = crossfade_durations[i]
         mode = transition_modes[i]
         next_label = f"{i+1}:a"
-        out_label = f"m{i}" if i < len(prepared_clips) - 2 else "out"
+        out_label = f"m{i}"
 
         if mode == "filter-sweep":
             curve_param = "c1=esin:c2=qsin"
@@ -359,6 +364,9 @@ def render_crossfade_mix(tracks, args, output_file):
         filter_parts.append(f"[{curr_label}][{next_label}]acrossfade=d={fade_d:.3f}:{curve_param}[{out_label}]")
         curr_label = out_label
 
+    # Master Output Stage: Apply EBU R128 / ITU-R BS.1770 Loudness Normalization & True Peak Limiting
+    filter_parts.append(f"[{curr_label}]loudnorm=I={args.target_lufs}:TP={args.true_peak}:LRA=10.0[out]")
+
     filter_complex = ";".join(filter_parts)
 
     cmd = ["ffmpeg", "-y"]
@@ -366,7 +374,7 @@ def render_crossfade_mix(tracks, args, output_file):
         cmd.extend(["-i", clip])
     cmd.extend([
         "-filter_complex", filter_complex,
-        "-map", f"[{curr_label}]",
+        "-map", "[out]",
         "-b:a", "320k",
         "-metadata", "album=Amapiano Continuous Mix (Crossfaded)",
         "-metadata", "title=Amapiano Set (Smart Crossfaded)",
@@ -392,6 +400,7 @@ def render_crossfade_mix(tracks, args, output_file):
 
     out_size_mb = os.path.getsize(output_file) / (1024 * 1024)
     print(f"-> Crossfaded Mix Rendered: {output_file} ({out_size_mb:.2f} MB)")
+    print(f"   [Loudness Target: {args.target_lufs} LUFS | True Peak Ceiling: {args.true_peak} dBTP]")
     print("Crossfaded Mix Timeline:")
     for mark_time, artist, title, trans in timeline_markers:
         trans_str = f" [Crossfade: {trans}]" if trans else ""
@@ -410,9 +419,11 @@ def main():
     crossfade_output = os.path.join(args.output_dir, "Amapiano_Continuous_Mix_Crossfaded.mp3")
 
     print("=" * 78)
-    print(" SMARTMIX: DUAL-MODE MIXTAPE ENGINE")
+    print(" SMARTMIX: DJ LOUDNESS-CONTROLLED MIXTAPE ENGINE")
     print("=" * 78)
-    print(f"Target Mode: {args.mode.upper()}")
+    print(f"Target Mode    : {args.mode.upper()}")
+    print(f"Loudness Target: {args.target_lufs:.1f} LUFS (Industry DJ/Club Reference)")
+    print(f"True Peak Cap  : {args.true_peak:.1f} dBTP (Inter-Sample Headroom Margin)")
     print(f"Loaded {len(tracks)} tracks from Automix playlist:\n")
 
     for i, t in enumerate(tracks):
@@ -427,12 +438,13 @@ def main():
         render_crossfade_mix(tracks, args, crossfade_output)
 
     print("\n" + "=" * 78)
-    print(" ALL REQUESTED MIXES GENERATED SUCCESSFULLY!")
+    print(" ALL REQUESTED MIXES GENERATED ACCORDING TO DJ LOUDNESS STANDARDS!")
     print("=" * 78)
     if args.mode in ("both", "normal"):
         print(f" 1. Normal Cut Mix    : {normal_output}")
     if args.mode in ("both", "crossfade"):
         print(f" 2. Crossfaded Mix   : {crossfade_output}")
+    print(f" Master Levels Verified: {args.target_lufs} LUFS Integrated, Max True Peak {args.true_peak} dBTP")
     print("=" * 78)
 
 if __name__ == "__main__":

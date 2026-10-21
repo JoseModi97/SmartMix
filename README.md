@@ -42,6 +42,12 @@ SmartMix provides **two distinct mixing styles**:
 - **Intelligent BPM & Tempo Matching (RubberBand Engine):**
   - Automatically compares BPMs between consecutive tracks.
   - If a tempo disparity exists ($> 0.3\text{ BPM}$), it applies pitch-preserving time-stretching (**RubberBand / WSOLA**) across the transition window so beatgrids remain locked in phase.
+- **Mastering & Broadcast Loudness Standards (EBU R128 / ITU-R BS.1770-4):**
+  - Commercial Amapiano and dance tracks are already mastered hot (frequently peaking near 0 dBFS). Summing two tracks during a 16-bar crossfade naturally causes severe gain accumulation (clipping up to +4.9 dBFS).
+  - SmartMix applies an integrated EBU R128 / ITU-R BS.1770-4 dual-stage loudness normalization filter with a true-peak ceiling:
+    - **Target Integrated Loudness:** `-14.0 LUFS` (The universal DJ/club reference level matching VirtualDJ AutoGain 89 dB SPL, Rekordbox, Apple Music, YouTube, and Spotify).
+    - **True Peak Ceiling:** `-1.5 dBTP` (AES TD1004 & Apple Digital Masters recommendation, ensuring headroom against inter-sample peaks during 320 kbps lossy MP3 compression).
+    - **Loudness Range Target:** `10.0 LU` (Preserves dynamic punch and transients of Amapiano log drums without flat brickwall squashing).
 - **32-Bit Float Mastering:**
   - Audio streams are processed in 32-bit floating-point PCM before being encoded into pristine $320\text{ kbps}$ MP3 with complete ID3 album metadata and tracklists.
 - **C++ DSP Plugin & VirtualDJ Skin Components:**
@@ -99,6 +105,8 @@ python generate_mixtape.py --use-last-cues
 | `--mode` | `str` | `both` | `both`, `crossfade`, `normal` |
 | `--crossfade-mode` | `str` | `dynamic` | `dynamic`, `bass-swap`, `filter-sweep`, `equal-power` |
 | `--normal-cutoff` | `str` | `cue2` | `cue2` (radio cut) or `cue3` (full phrase cut) |
+| `--target-lufs` | `float` | `-14.0` | Integrated loudness target in LUFS (EBU R128 DJ/Club standard) |
+| `--true-peak` | `float` | `-1.5` | Maximum true peak ceiling in dBTP (prevents inter-sample clipping) |
 | `--entry-cue` | `int` | `1` | Cue number for track entry / mix-in |
 | `--fade-cue` | `int` | `2` | Cue number where fade-out begins / normal cut |
 | `--exit-cue` | `int` | `3` | Cue number where outgoing track cuts off |

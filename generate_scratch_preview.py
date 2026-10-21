@@ -1,377 +1,242 @@
-import os
+"""Song-derived, beat-locked scratch performance. Requires numpy, scipy, FFmpeg."""
+import argparse
+import json
+from pathlib import Path
 import subprocess
+import tempfile
+
 import numpy as np
-from scipy.io import wavfile
 from scipy import signal
+from scipy.interpolate import PchipInterpolator
+from scipy.io import wavfile
+
+SR = 44100
+DEFAULT_TRACK = Path(r"C:\Users\odhis\Downloads\Amapiano\Heavy-K, DJ Buckz, Nonny D - No Bad Vibes (SPOTISAVER).mp3")
+
+
+def ffmpeg(*args):
+    return subprocess.run(["ffmpeg", "-hide_banner", "-nostats", *map(str, args)],
+                          capture_output=True, check=True)
+
+
+def edge_fade(audio, milliseconds=3):
+    audio = audio.copy()
+    n = min(round(SR * milliseconds / 1000), len(audio) // 2)
+    if n:
+        ramp = np.sin(np.linspace(0, np.pi / 2, n)) ** 2
+        audio[:n] *= ramp[:, None]
+        audio[-n:] *= ramp[::-1, None]
+    return audio
+
+
+def render_gesture(source, beats, beat, kind, rng):
+    """Continuous hand trajectory; fader closes around deliberate reversals."""
+    n = max(16, round(beats * beat * SR))
+    u = np.arange(n) / n
+    # Fader events and hand reversals share one musical clock.
+    apex = .5
+    travel = rng.uniform(.115, .175)
+    if kind == "stab":
+        knots, positions = [0, .45, .55, 1], [0, 1, 1, 0]
+    elif kind == "tear":
+        knots = [0, .20, .28, .48, .71, 1]
+        positions = [0, .38, .40, 1, .58, 0]
+    else:
+        knots, positions = [0, apex, 1], [0, 1, 0]
+    trajectory = .008 + travel * PchipInterpolator(knots, positions)(u)
+    velocity = np.abs(np.gradient(trajectory) * SR)
+    # Prefilter before accelerated playback to control aliasing and brittle highs.
+    cutoff = min(12500, 17500 / max(1, float(velocity.max())))
+    sos = signal.butter(4, [220, max(600, cutoff)], btype="bandpass", fs=SR, output="sos")
+    source = signal.sosfiltfilt(sos, source, axis=0)
+    indices = np.clip(trajectory * SR, 0, len(source) - 2)
+    lo = indices.astype(np.int64)
+    frac = (indices - lo)[:, None]
+    audio = source[lo] * (1 - frac) + source[lo + 1] * frac
+    gate = np.ones(n)
+    if kind == "stab":
+        # Hear the forward hit; hide the hand returning to the cue.
+        gate[u >= .43] = 0
+    elif kind == "chirp":
+        gate[(u > .37) & (u < .63)] = 0
+    elif kind == "flare":
+        for center in (.125, .375, .625, .875):
+            gate[np.abs(u - center) < .034] = 0
+    elif kind == "transform":
+        gate = (((u * max(1, round(beats * 4))) % 1) < .60).astype(float)
+    # A median filter does not soften a square fader edge; an actual raised-cosine
+    # convolution does. Keep cuts short and percussive without digital clicks.
+    kernel = np.hanning(max(5, round(SR * .0015) | 1))
+    gate = signal.convolve(gate, kernel / kernel.sum(), mode="same")
+    # Silence near a stopped platter instead of sustaining a frozen sample value.
+    gate *= np.minimum(1, velocity / .12)
+    audio *= gate[:, None]
+    audio = edge_fade(audio).astype(np.float32)
+    rms = np.sqrt(np.mean(audio ** 2) + 1e-12)
+    audio *= min(4, .21 / rms)
+    return audio
+
+
+def phrase_pickup(song, start, beat):
+    """A nearby midrange attack, retaining the phrase that follows it.
+
+    This is an onset selector, not a vocal or syllable recognizer.
+    """
+    start = max(0, min(start, len(song) - round(beat * 4 * SR)))
+    search = song[start:start + round(beat * .5 * SR)]
+    mid = signal.sosfilt(signal.butter(2, [400, 4500], btype="bandpass",
+                                      fs=SR, output="sos"), search, axis=0)
+    hop = 220
+    count = len(mid) // hop
+    energy = np.sqrt(np.mean(mid[:count * hop].reshape(count, hop, 2) ** 2,
+                             axis=(1, 2)) + 1e-12)
+    attack = np.maximum(0, np.diff(energy, prepend=energy[0]))
+    offset = max(0, int(np.argmax(attack)) * hop - round(.008 * SR))
+    return start + offset
+
+
+def sample_bank(song, beat):
+    """Choose several strong midrange attacks from the actual song."""
+    mid = signal.sosfilt(signal.butter(3, [350, 5000], btype="bandpass",
+                                     fs=SR, output="sos"), song, axis=0)
+    hop = 441
+    count = len(mid) // hop
+    energy = np.sqrt(np.mean(mid[:count * hop].reshape(count, hop, 2) ** 2,
+                             axis=(1, 2)) + 1e-12)
+    onset = np.maximum(0, energy - np.roll(energy, 3))
+    peaks, _ = signal.find_peaks(onset, distance=max(1, round(beat * 100)))
+    peaks = sorted(peaks, key=lambda p: onset[p], reverse=True)
+    picks = []
+    for p in peaks:
+        start = max(0, p * hop - round(.012 * SR))
+        if start + SR > len(song):
+            continue
+        if any(abs(start - old) < beat * SR for old in picks):
+            continue
+        picks.append(start)
+        if len(picks) == 5:
+            break
+    if not picks:
+        picks = [0]
+    bank = []
+    for start in picks:
+        sample = song[start:start + SR].copy()
+        rms = np.sqrt(np.mean(sample ** 2) + 1e-12)
+        sample *= min(3, .16 / rms)
+        bank.append(sample)
+    return bank, [round(p / SR, 3) for p in picks]
+
 
 def make_scratch_preview():
-    track_path = r"C:\Users\odhis\Downloads\Amapiano\Heavy-K, DJ Buckz, Nonny D - No Bad Vibes (SPOTISAVER).mp3"
-    output_mp3 = r"C:\Users\odhis\Downloads\Amapiano\Heavy-K_No_Bad_Vibes_DJ_Scratch_Preview.mp3"
-    temp_wav = r"C:\Users\odhis\Downloads\Amapiano\_temp_scratch.wav"
-
-    sr = 44100
-    bpm = 118.0
-    beat_s = 60.0 / bpm         # ~0.50847s per beat
-    bar_s = beat_s * 4.0        # ~2.0339s per bar
-    cue1_s = 0.122              # Cue 1 start time in the song
-    total_duration_s = 65.0     # Preview duration
-
-    print("=" * 78)
-    print(" SMARTMIX: SUBTLE MULTITRACK LIVE DJ SCRATCH MASTER")
-    print("=" * 78)
-    print(f"Track       : Heavy-K, DJ Buckz, Nonny D - No Bad Vibes")
-    print(f"BPM         : {bpm} (1 Beat = {beat_s*1000:.1f}ms | 1 Bar = {bar_s:.2f}s)")
-    print(f"Style       : Smooth, Musical Multitrack Scratches (Subtle & Integrated)")
-
-    # 1. Load continuous song audio starting at Cue 1
-    print("\n[1/5] Extracting continuous song track...")
-    cmd = [
-        "ffmpeg", "-y", "-ss", str(cue1_s), "-t", str(total_duration_s + 2.0),
-        "-i", track_path,
-        "-f", "s16le", "-ac", "2", "-ar", str(sr), "-"
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--track", type=Path, default=DEFAULT_TRACK)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--bpm", type=float, default=118)
+    parser.add_argument("--cue", type=float, default=.122)
+    parser.add_argument("--duration", type=float, default=65)
+    parser.add_argument("--intensity", type=float, default=1.25, help="Scratch level, 0 to 1.5")
+    parser.add_argument("--beat-offset", type=float, default=-.022,
+                        help="Beat-grid offset in seconds relative to cue")
+    parser.add_argument("--seed", type=int, default=27)
+    args = parser.parse_args()
+    if not 40 <= args.bpm <= 240 or args.duration < 8 or args.cue < 0:
+        parser.error("Use BPM 40..240, duration >= 8 seconds, and cue >= 0")
+    if not 0 <= args.intensity <= 1.5:
+        parser.error("Intensity must be between 0 and 1.5")
+    output = args.output or args.track.with_name("Heavy-K_No_Bad_Vibes_Kenyan_Scratch_Preview.mp3")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    raw = ffmpeg("-ss", args.cue, "-i", args.track, "-t", args.duration,
+                 "-f", "f32le", "-ac", 2, "-ar", SR, "-").stdout
+    song = np.frombuffer(raw, dtype="<f4").reshape(-1, 2).copy()
+    if len(song) < SR * 8:
+        raise ValueError("At least eight seconds of audio are required after the cue")
+    beat = 60 / args.bpm
+    pickups = []
+    rng = np.random.default_rng(args.seed)
+    scratch = np.zeros_like(song)
+    duck = np.ones(len(song), dtype=np.float32)
+    events = []
+    patterns = [
+        [(0, .5, "stab"), (.5, .5, "stab"), (1, 1, "chirp")],
+        [(0, 1, "tear"), (1, .5, "chirp"), (1.5, .5, "stab")],
+        [(0, .5, "chirp"), (.5, .5, "chirp"), (1, 1, "transform")],
+        [(0, 1, "tear"), (1, .5, "flare"), (1.5, .5, "stab")],
     ]
-    proc = subprocess.run(cmd, capture_output=True, check=True)
-    raw_audio = np.frombuffer(proc.stdout, dtype=np.int16).astype(np.float32) / 32768.0
-    song_audio = raw_audio.reshape(-1, 2)
+    routines = [(p, patterns[i % len(patterns)])
+                for i, p in enumerate(range(4, int(len(song) / SR / beat) - 6, 8))]
 
-    n_total = int(round(sr * total_duration_s))
-    song_track = song_audio[:n_total].copy()
-    scratch_track = np.zeros_like(song_track)
-    ducking_envelope = np.ones((n_total, 1), dtype=np.float32)
-
-    # Scratch sample: anchored at the crisp 8ms transient attack
-    transient_offset = int(sr * 0.008)
-    scratch_sample = song_audio[transient_offset:transient_offset + int(sr * 1.8)].copy()
-
-    # -------------------------------------------------------------------------
-    # DSP: Resampling with Warm Platter Physics & Smooth Fader Curves
-    # -------------------------------------------------------------------------
-    def render_scratch(source, time_traj_sec, fader_env):
-        sample_indices = time_traj_sec * sr
-        sample_indices = np.clip(sample_indices, 0, len(source) - 2)
-        idx_floor = np.floor(sample_indices).astype(np.int32)
-        frac = (sample_indices - idx_floor)[:, None]
-
-        s0 = source[idx_floor]
-        s1 = source[idx_floor + 1]
-        scratched = s0 * (1.0 - frac) + s1 * frac
-
-        dt = 1.0 / sr
-        vel = np.gradient(time_traj_sec, dt)
-        speed = np.abs(vel)
-
-        # Warm phono response: balanced frequency response (subtle dynamics, no harsh spikes)
-        warm_phono = np.clip(0.75 + 0.25 * speed[:, None], 0.5, 1.25)
-        scratched *= warm_phono
-
-        # Smooth 2ms fader smoothing for warm analog turntable feel
-        kernel = max(3, int(sr * 0.0020) | 1)
-        smoothed_fader = signal.medfilt(fader_env, kernel_size=kernel) if len(fader_env) > kernel else fader_env
-        scratched *= smoothed_fader[:, None]
-        return scratched
-
-    # -------------------------------------------------------------------------
-    # Scratch Gesture Generators (Musical, On-Beat, Subtle)
-    # -------------------------------------------------------------------------
-    def baby_scratch(duration_s, amp_s=0.15, n_strokes=1):
-        n = int(round(sr * duration_s))
-        t = np.linspace(0, duration_s, n, endpoint=False)
-        stroke_dur = duration_s / (2 * n_strokes)
-        traj = np.zeros(n, dtype=np.float32)
-        for i in range(2 * n_strokes):
-            t_s = i * stroke_dur
-            t_e = (i + 1) * stroke_dur
-            mask = (t >= t_s) & (t < t_e)
-            u = (t[mask] - t_s) / stroke_dur
-            curve = u**2 * (3.0 - 2.0 * u)
-            if i % 2 == 0:
-                traj[mask] = curve * amp_s
-            else:
-                traj[mask] = (1.0 - curve) * amp_s
-        fader = np.ones(n, dtype=np.float32)
-        return traj, fader
-
-    def chirp_scratch(duration_s, amp_s=0.16, n_chirps=1):
-        n = int(round(sr * duration_s))
-        t = np.linspace(0, duration_s, n, endpoint=False)
-        chirp_dur = duration_s / n_chirps
-        traj = np.zeros(n, dtype=np.float32)
-        fader = np.zeros(n, dtype=np.float32)
-        for i in range(n_chirps):
-            t_s = i * chirp_dur
-            t_e = (i + 1) * chirp_dur
-            mask = (t >= t_s) & (t < t_e)
-            u = (t[mask] - t_s) / chirp_dur
-            push_mask = u < 0.45
-            u_push = u[push_mask] / 0.45
-            u_pull = (u[~push_mask] - 0.45) / 0.55
-            
-            stroke_traj = np.zeros(len(u), dtype=np.float32)
-            stroke_traj[push_mask] = (u_push**2 * (3 - 2 * u_push)) * amp_s
-            stroke_traj[~push_mask] = ((1.0 - u_pull)**2 * (3 - 2 * (1.0 - u_pull))) * amp_s
-            traj[mask] = stroke_traj
-
-            stroke_fader = np.zeros(len(u), dtype=np.float32)
-            stroke_fader[push_mask] = 1.0
-            stroke_fader[~push_mask] = np.where(u_pull > 0.85, 1.0, 0.0)
-            fader[mask] = stroke_fader
-        return traj, fader
-
-    def tear_scratch(duration_s, amp_s=0.18):
-        n = int(round(sr * duration_s))
-        t = np.linspace(0, duration_s, n, endpoint=False)
-        u = t / duration_s
-        traj = np.where(
-            u < 0.35,
-            (u / 0.35) * (amp_s * 0.4),
-            np.where(
-                u < 0.60,
-                (amp_s * 0.4) + ((u - 0.35) / 0.25) * (amp_s * 0.6),
-                amp_s * (1.0 - (u - 0.60) / 0.40)
-            )
-        ).astype(np.float32)
-        fader = np.ones(n, dtype=np.float32)
-        return traj, fader
-
-    def transformer_scratch(duration_s, amp_s=0.20, cuts_per_beat=4):
-        n = int(round(sr * duration_s))
-        t = np.linspace(0, duration_s, n, endpoint=False)
-        u = t / duration_s
-        traj = (0.5 - 0.5 * np.cos(2 * np.pi * u)) * amp_s
-        cut_period = beat_s / cuts_per_beat
-        phase = (t % cut_period) / cut_period
-        fader = np.where(phase < 0.65, 1.0, 0.0).astype(np.float32)
-        return traj.astype(np.float32), fader
-
-    def flare_scratch(duration_s, amp_s=0.18):
-        n = int(round(sr * duration_s))
-        t = np.linspace(0, duration_s, n, endpoint=False)
-        u = t / duration_s
-        traj = np.where(u < 0.5, (u / 0.5) * amp_s, (1.0 - (u - 0.5) / 0.5) * amp_s).astype(np.float32)
-        fader = np.ones(n, dtype=np.float32)
-        mask_click1 = (u >= 0.22) & (u <= 0.28)
-        mask_click2 = (u >= 0.72) & (u <= 0.78)
-        fader[mask_click1] = 0.0
-        fader[mask_click2] = 0.0
-        return traj, fader
-
-    def stutter_roll(slice_audio, div_beats, duration_beats, crescendo=False):
-        div_s = beat_s * div_beats
-        n_div = int(round(sr * div_s))
-        repeats = int(round(duration_beats / div_beats))
-        win_len = min(len(slice_audio), n_div)
-        unit = np.zeros((n_div, 2), dtype=np.float32)
-        fade_len = min(int(sr * 0.003), win_len // 4)
-        c = slice_audio[:win_len].copy()
-        if fade_len > 0:
-            c[-fade_len:] *= np.linspace(1, 0, fade_len)[:, None]
-        unit[:win_len] = c
-        block = np.tile(unit, (repeats, 1))
-        if crescendo:
-            block *= np.linspace(0.8, 1.15, len(block))[:, None]
-        return block
-
-    def vinyl_brake(source, duration_s):
-        n = int(round(sr * duration_s))
-        t = np.linspace(0, duration_s, n)
-        p = (t - (t**2)/duration_s + (t**3)/(3 * duration_s**2)) * 0.30
-        fader = (1.0 - (t / duration_s)**1.6).astype(np.float32)
-        return render_scratch(source, p, fader)
-
-    # -------------------------------------------------------------------------
-    # Subtle Multitrack Scratch Overlay Function
-    # -------------------------------------------------------------------------
-    # boost=0.92: Sits naturally in the mix without being overbearing
-    # duck_amount=0.88: Gentle micro-ducking (-1.1 dB) preserving groove energy
-    def add_scratch_event(start_time_s, audio_block, duck_amount=0.88, boost=0.92):
-        start_samp = int(round(start_time_s * sr))
-        end_samp = start_samp + len(audio_block)
-        if start_samp >= n_total:
+    def place(block, beat_number, kind, source_seconds=None):
+        start = round((beat_number * beat + args.beat_offset) * SR)
+        if start < 0 or start >= len(song):
             return
-        if end_samp > n_total:
-            audio_block = audio_block[:n_total - start_samp]
-            end_samp = n_total
-        
-        scratch_track[start_samp:end_samp] += audio_block * boost
+        block = block[:len(song) - start]
+        scratch[start:start + len(block)] += block * args.intensity
+        depth = 1 - .88 * min(1, args.intensity)
+        envelope = np.full(len(block), depth, dtype=np.float32)
+        ramp = min(round(.004 * SR), len(block) // 2)
+        envelope[:ramp] = np.linspace(1, depth, ramp)
+        envelope[-ramp:] = np.linspace(depth, 1, ramp)
+        duck[start:start + len(block)] = np.minimum(duck[start:start + len(block)], envelope)
+        events.append({"seconds": start / SR, "beat": beat_number, "gesture": kind,
+                       "source_seconds": source_seconds})
 
-        duck_len = end_samp - start_samp
-        duck_env = np.ones(duck_len, dtype=np.float32) * duck_amount
-        ramp_len = min(int(sr * 0.008), duck_len // 4)
-        if ramp_len > 0:
-            duck_env[:ramp_len] = np.linspace(1.0, duck_amount, ramp_len)
-            duck_env[-ramp_len:] = np.linspace(duck_amount, 1.0, ramp_len)
-        ducking_envelope[start_samp:end_samp, 0] = np.minimum(ducking_envelope[start_samp:end_samp, 0], duck_env)
+    for phrase, gestures in routines:
+        # Work the current phrase, rather than an unrelated loud hit elsewhere.
+        pickup = phrase_pickup(song, round((phrase * beat + args.beat_offset) * SR), beat)
+        pickups.append(pickup / SR)
+        source = song[pickup:pickup + round(4 * beat * SR)].copy()
+        for j, (offset, length, kind) in enumerate(gestures):
+            place(render_gesture(source, length, beat, kind, rng), phrase + offset, kind, pickup / SR)
+        # Repeat the same pickup used by the scratches, then move forward through
+        # the phrase. Alternate a longer reply with a quicker turnaround.
+        cursor = pickup
+        repeats_plan = ([(2, .5, 2), (3, .25, 4)] if phrase % 16 == 4
+                        else [(2, .25, 4), (3, .5, 2)])
+        for offset, division, repeats in repeats_plan:
+            size = round(division * beat * SR)
+            unit = song[cursor:cursor + size].copy()
+            if len(unit) != size:
+                break
+            unit = edge_fade(unit, 2)
+            rms = np.sqrt(np.mean(unit ** 2) + 1e-12)
+            unit *= min(3, .21 / rms)
+            for repeat in range(repeats):
+                place(unit, phrase + offset + repeat * division, "repeat", cursor / SR)
+            cursor += size
+        # Release at normal pitch from exactly the next source position, on beat.
+        release = edge_fade(song[cursor:cursor + round(2 * beat * SR)], 3)
+        rms = np.sqrt(np.mean(release ** 2) + 1e-12)
+        release *= min(2, .21 / rms)
+        place(release, phrase + 4, "release", cursor / SR)
+    # Keep a steady low-end bed while giving the phrase deck space in the mids.
+    bass = signal.sosfilt(signal.butter(4, 170, fs=SR, output="sos"), song, axis=0)
+    bass_gain = .82 + .18 * duck
+    master = bass * bass_gain[:, None] + (song - bass) * duck[:, None] + scratch
+    # Float WAV preserves peaks above 0 dBFS until mastering: never pre-clip.
+    master = edge_fade(master, 15)
+    with tempfile.TemporaryDirectory(prefix="smartmix_", dir=output.parent) as temp:
+        wav = Path(temp) / "mix.wav"
+        wavfile.write(wav, SR, master.astype(np.float32))
+        measured = ffmpeg("-i", wav, "-af", "loudnorm=I=-14:TP=-2:LRA=10:print_format=json",
+                          "-f", "null", "-").stderr.decode()
+        stats = json.loads(measured[measured.rfind("{"):measured.rfind("}") + 1])
+        norm = ("loudnorm=I=-14:TP=-2:LRA=10:linear=true:"
+                f"measured_I={stats['input_i']}:measured_TP={stats['input_tp']}:"
+                f"measured_LRA={stats['input_lra']}:measured_thresh={stats['input_thresh']}:"
+                f"offset={stats['target_offset']}")
+        ffmpeg("-y", "-i", wav, "-af", norm, "-ar", SR, "-c:a", "libmp3lame", "-b:a", "320k",
+               "-metadata", "title=No Bad Vibes (Kenyan Scratch Preview)", output)
+    meter = ffmpeg("-i", output, "-af", "loudnorm=I=-14:TP=-2:LRA=10:print_format=json",
+                   "-f", "null", "-").stderr.decode()
+    verified = json.loads(meter[meter.rfind("{"):meter.rfind("}") + 1])
+    report = {"output": str(output), "bpm": args.bpm, "cue": args.cue,
+              "beat_offset": args.beat_offset, "intensity": args.intensity,
+              "duration": len(song) / SR, "sample_pickups_seconds_after_cue": pickups,
+              "events": events, "decoded_mp3_lufs": verified["input_i"],
+              "decoded_mp3_true_peak_db": verified["input_tp"]}
+    output.with_suffix(".json").write_text(json.dumps(report, indent=2))
+    print(json.dumps(report, indent=2))
 
-    print("\n[2/5] Weaving Subtle, Musical Scratches Over Continuous Playback...")
-
-    # =========================================================================
-    # INTRO SECTION: The song plays its intro while subtle scratches dance on top
-    # =========================================================================
-    # Bar 1 (0.0s - 2.03s): Song starts playing, warm baby stabs overlaid
-    print("  * [00.0s - 02.0s] Bar 1: Intro plays with warm Baby Stabs overlaid")
-    t1, f1 = baby_scratch(beat_s, amp_s=0.15, n_strokes=1)
-    t2, f2 = baby_scratch(beat_s, amp_s=0.15, n_strokes=1)
-    t3, f3 = baby_scratch(beat_s, amp_s=0.12, n_strokes=2)
-    t4, f4 = chirp_scratch(beat_s, amp_s=0.16, n_chirps=1)
-    intro_scratches_1 = np.concatenate([
-        render_scratch(scratch_sample, t1, f1),
-        render_scratch(scratch_sample, t2, f2),
-        render_scratch(scratch_sample, t3, f3),
-        render_scratch(scratch_sample, t4, f4)
-    ], axis=0)
-    add_scratch_event(0.0, intro_scratches_1, duck_amount=0.85, boost=0.90)
-
-    # Bar 2 (2.03s - 4.07s): Song intro continues, tear & subtle transformer chops
-    print("  * [02.0s - 04.1s] Bar 2: Tear & subtle Transformer chops")
-    t5, f5 = tear_scratch(beat_s, amp_s=0.18)
-    t6, f6 = flare_scratch(beat_s, amp_s=0.16)
-    t7, f7 = transformer_scratch(beat_s, amp_s=0.18, cuts_per_beat=4)
-    t8, f8 = chirp_scratch(beat_s, amp_s=0.16, n_chirps=2)
-    intro_scratches_2 = np.concatenate([
-        render_scratch(scratch_sample, t5, f5),
-        render_scratch(scratch_sample, t6, f6),
-        render_scratch(scratch_sample, t7, f7),
-        render_scratch(scratch_sample, t8, f8)
-    ], axis=0)
-    add_scratch_event(bar_s, intro_scratches_2, duck_amount=0.85, boost=0.90)
-
-    # Bar 3 (4.07s - 6.10s): ACID Stutter Roll & Soft Pre-Drop Brake
-    print("  * [04.1s - 06.1s] Bar 3: ACID 1/8 -> 1/16 -> 1/32 Stutter Roll & Soft Brake")
-    r_1_8 = stutter_roll(scratch_sample, 0.5, 1.0)
-    r_1_16 = stutter_roll(scratch_sample, 0.25, 1.0)
-    r_1_32 = stutter_roll(scratch_sample, 0.125, 1.0, crescendo=True)
-    brake_dur = beat_s * 0.85
-    brake_audio = vinyl_brake(scratch_sample, brake_dur)
-    intro_roll = np.concatenate([r_1_8, r_1_16, r_1_32, brake_audio], axis=0)
-    add_scratch_event(bar_s * 2.0, intro_roll, duck_amount=0.80, boost=0.92)
-
-    # Micro-breath on the song right before THE DROP (5.75s to 6.10s)
-    brake_start_samp = int(round((bar_s * 2.0 + beat_s * 3.2) * sr))
-    brake_len = int(round(beat_s * 0.8 * sr))
-    ducking_envelope[brake_start_samp:brake_start_samp + brake_len, 0] *= np.linspace(1.0, 0.35, brake_len)**1.5
-
-    print("  * [06.1s] DROP 1: Amapiano groove hits and rolls continuously!")
-
-    # =========================================================================
-    # IN-SONG SCRATCHES (Tasteful, subtle, locked to phrasing)
-    # =========================================================================
-    # Scratch 1: Bar 4, Beats 3 & 4 (Turnaround Double Chirp)
-    print("  * [07.1s] Scratch 1: Turnaround Double Chirp over rolling beat")
-    tc1, fc1 = chirp_scratch(beat_s, amp_s=0.18, n_chirps=2)
-    tc2, fc2 = baby_scratch(beat_s, amp_s=0.14, n_strokes=2)
-    s1 = np.concatenate([render_scratch(scratch_sample, tc1, fc1), render_scratch(scratch_sample, tc2, fc2)], axis=0)
-    add_scratch_event(bar_s * 3.5, s1, duck_amount=0.88, boost=0.92)
-
-    # Scratch 2: Bar 8, Beats 2, 3, 4 (Transformer + Flare Slip Scratch)
-    print("  * [14.7s] Scratch 2: In-Song Slip Scratch (Transformer + Flare)")
-    tf1, ff1 = transformer_scratch(beat_s * 1.5, amp_s=0.20, cuts_per_beat=4)
-    tf2, ff2 = flare_scratch(beat_s * 1.5, amp_s=0.18)
-    s2 = np.concatenate([render_scratch(scratch_sample, tf1, ff1), render_scratch(scratch_sample, tf2, ff2)], axis=0)
-    add_scratch_event(bar_s * 7.25, s2, duck_amount=0.86, boost=0.92)
-
-    # Scratch 3: Bar 12, Beats 3 & 4 (1/32 Stutter Roll Accent)
-    print("  * [23.4s] Scratch 3: 1/32 Stutter Roll Accent over groove")
-    s3 = stutter_roll(scratch_sample, 0.125, 2.0, crescendo=True)
-    add_scratch_event(bar_s * 11.5, s3, duck_amount=0.88, boost=0.90)
-
-    # Scratch 4: Bar 16, Beats 1 to 4 (Pre-Drop Scratch Routine over build-up)
-    print("  * [30.5s] Scratch 4: Musical Pre-Drop Scratch Routine leading into Major Drop")
-    t_pd1, f_pd1 = chirp_scratch(beat_s, amp_s=0.20, n_chirps=2)
-    t_pd2, f_pd2 = tear_scratch(beat_s, amp_s=0.18)
-    t_pd3, f_pd3 = baby_scratch(beat_s, amp_s=0.15, n_strokes=2)
-    pd_brake = vinyl_brake(scratch_sample, beat_s * 0.85)
-    s4 = np.concatenate([
-        render_scratch(scratch_sample, t_pd1, f_pd1),
-        render_scratch(scratch_sample, t_pd2, f_pd2),
-        render_scratch(scratch_sample, t_pd3, f_pd3),
-        pd_brake
-    ], axis=0)
-    add_scratch_event(bar_s * 15.0, s4, duck_amount=0.82, boost=0.95)
-
-    print("  * [32.5s] MAJOR DROP: Heavy Vocal & Log Drum Explosion!")
-
-    # Scratch 5: Bar 20, Beats 3 & 4 (Vocal Pocket Chirp Scratch)
-    print("  * [39.7s] Scratch 5: Vocal Pocket Chirp Scratch in lyric pause")
-    t_vp, f_vp = chirp_scratch(beat_s * 2.0, amp_s=0.20, n_chirps=3)
-    s5 = render_scratch(scratch_sample, t_vp, f_vp)
-    add_scratch_event(bar_s * 19.5, s5, duck_amount=0.88, boost=0.92)
-
-    # Scratch 6: Bar 24, Beats 2, 3, 4 (Fast Flare & Transformer Combo)
-    print("  * [47.3s] Scratch 6: Fast Flare & Transformer Combo over rolling beat")
-    t_fl, f_fl = flare_scratch(beat_s * 1.5, amp_s=0.18)
-    t_tr, f_tr = transformer_scratch(beat_s * 1.5, amp_s=0.20, cuts_per_beat=4)
-    s6 = np.concatenate([render_scratch(scratch_sample, t_fl, f_fl), render_scratch(scratch_sample, t_tr, f_tr)], axis=0)
-    add_scratch_event(bar_s * 23.25, s6, duck_amount=0.86, boost=0.92)
-
-    # Scratch 7: Bar 28, Beats 3 & 4 (Double Chirp into Outro)
-    print("  * [55.4s] Scratch 7: Double Chirp into Outro Climax")
-    t_oc, f_oc = chirp_scratch(beat_s * 2.0, amp_s=0.20, n_chirps=3)
-    s7 = render_scratch(scratch_sample, t_oc, f_oc)
-    add_scratch_event(bar_s * 27.25, s7, duck_amount=0.88, boost=0.90)
-
-    # Outro: Bar 31 (Smooth Turntable Backspin & Vinyl Power Down)
-    print("  * [61.0s] OUTRO: Smooth Turntable Backspin & Vinyl Brake")
-    spin_dur = bar_s * 1.5
-    n_spin = int(round(sr * spin_dur))
-    t_spin = np.linspace(0, spin_dur, n_spin)
-    traj_spin = 0.75 * np.exp(-3.5 * t_spin / spin_dur)
-    fader_spin = (1.0 - t_spin / spin_dur).astype(np.float32)
-    outro_spin = render_scratch(scratch_sample, traj_spin, fader_spin)
-    add_scratch_event(total_duration_s - spin_dur, outro_spin, duck_amount=0.60, boost=0.95)
-
-    # Fade out song at the very end (last 1.5 seconds)
-    fade_end_len = int(sr * 1.5)
-    ducking_envelope[-fade_end_len:, 0] *= np.linspace(1.0, 0.0, fade_end_len)
-
-    # =========================================================================
-    # MULTITRACK MIXDOWN: Song Deck + Scratch Deck
-    # =========================================================================
-    print("\n[3/5] Mixing Multitrack (Continuous Song + Subtle Scratches)...")
-    multitrack_master = song_track * ducking_envelope + scratch_track
-
-    # Step 4: Write intermediate WAV
-    wavfile.write(temp_wav, sr, (np.clip(multitrack_master, -1.0, 1.0) * 32767).astype(np.int16))
-
-    # Step 5: Master with EBU R128 DJ Loudness Normalization (-14 LUFS, -1.5 dBTP)
-    print("\n[4/5] Mastering to 320k MP3 with EBU R128 DJ Standards...")
-    master_cmd = [
-        "ffmpeg", "-y",
-        "-i", temp_wav,
-        "-af", "loudnorm=I=-14.0:TP=-1.5:LRA=10.0",
-        "-b:a", "320k",
-        "-metadata", "title=No Bad Vibes (Subtle DJ Scratch Master Preview)",
-        "-metadata", "artist=Heavy-K, DJ Buckz, Nonny D",
-        "-metadata", "album=SmartMix Professional DJ Series",
-        "-metadata", "comment=Multitrack Continuous Playback with Subtle ACID & VirtualDJ Scratches",
-        output_mp3
-    ]
-    subprocess.run(master_cmd, check=True)
-
-    if os.path.exists(temp_wav):
-        os.remove(temp_wav)
-
-    # Step 6: Loudness Verification
-    print("\n[5/5] Verifying Master Loudness...")
-    meter_cmd = [
-        "ffmpeg", "-hide_banner", "-nostats",
-        "-i", output_mp3,
-        "-af", "ebur128=peak=true",
-        "-f", "null", "-"
-    ]
-    meter_res = subprocess.run(meter_cmd, capture_output=True, text=True)
-    summary_lines = [l for l in meter_res.stderr.split("\n") if "I:" in l or "Peak:" in l or "LRA:" in l]
-
-    out_mb = os.path.getsize(output_mp3) / (1024 * 1024)
-    print("\n" + "=" * 78)
-    print(" SUBTLE MULTITRACK DJ SCRATCH MASTER GENERATED SUCCESSFULLY!")
-    print("=" * 78)
-    print(f"File     : {output_mp3} ({out_mb:.2f} MB)")
-    print(f"Length   : {total_duration_s:.2f} seconds")
-    print(f"Playback : Song plays CONTINUOUSLY with subtle scratches woven on top")
-    print(f"Loudness :")
-    for sl in summary_lines[-3:]:
-        print(f"  {sl.strip()}")
-    print("=" * 78)
 
 if __name__ == "__main__":
     make_scratch_preview()

@@ -1,5 +1,6 @@
 import os
 import sys
+import random
 import argparse
 import subprocess
 import xml.etree.ElementTree as ET
@@ -69,9 +70,9 @@ def parse_args():
     parser.add_argument(
         "--crossfade-mode",
         type=str,
-        default="dynamic",
-        choices=["dynamic", "bass-swap", "filter-sweep", "echo-out", "equal-power"],
-        help="Global transition style: 'dynamic' (alternates styles), 'bass-swap' (LR-4 low-end crossover), 'filter-sweep' (HPF wash), 'echo-out' (tempo delay freeze), 'equal-power' (sine blend)"
+        default="random",
+        choices=["random", "dynamic", "bass-swap", "filter-sweep", "echo-out", "equal-power"],
+        help="Global transition style: 'random' (randomizes scratch-free styles), 'dynamic', 'bass-swap', 'filter-sweep', 'echo-out', 'equal-power'"
     )
     parser.add_argument(
         "--trans-style",
@@ -195,12 +196,23 @@ def get_track_data(args):
                 raw_bpm = float(scan.get("Bpm"))
                 if raw_bpm > 0:
                     db_bpm = round(60.0 / raw_bpm, 3)
+            
+            infos = s.find("Infos")
+            db_length = float(infos.get("SongLength", 0.0)) if infos is not None and infos.get("SongLength") else 0.0
+
+            tags = s.find("Tags")
+            db_artist = tags.get("Author", "") if tags is not None else ""
+            db_title = tags.get("Title", "") if tags is not None else ""
+
             db_lookup[p] = {
                 "entry": entry_pos,
                 "fade": fade_pos,
                 "exit": exit_pos,
                 "all_cues": all_cues,
-                "bpm": db_bpm
+                "bpm": db_bpm,
+                "length": db_length,
+                "artist": db_artist,
+                "title": db_title
             }
 
     tree_folder = ET.parse(VDJ_FOLDER)
@@ -210,15 +222,31 @@ def get_track_data(args):
         if not os.path.exists(p):
             print(f"Warning: File not found: {p}")
             continue
-        
-        artist = s.get("artist", "Unknown Artist")
-        title = s.get("title", "Unknown Title")
-        bpm = float(s.get("bpm", 0.0))
-        length = float(s.get("songlength", 0.0))
-        
+
         info = db_lookup.get(p, {})
-        if info.get("bpm"):
-            bpm = info["bpm"]
+        bpm = float(s.get("bpm", 0.0)) or info.get("bpm", 0.0)
+        length = float(s.get("songlength", 0.0)) or info.get("length", 0.0)
+
+        # Fallback length from ffprobe if still 0.0
+        if length <= 0.0:
+            try:
+                cmd_len = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", p]
+                res_len = subprocess.run(cmd_len, capture_output=True, text=True)
+                length = float(res_len.stdout.strip())
+            except Exception:
+                pass
+
+        artist = s.get("artist") or info.get("artist")
+        title = s.get("title") or info.get("title")
+        if not artist or not title or artist == "Unknown Artist" or title == "Unknown Title":
+            stem = Path(p).stem
+            if " - " in stem:
+                parsed_artist, parsed_title = stem.split(" - ", 1)
+                artist = artist or parsed_artist.strip()
+                title = title or parsed_title.strip()
+            else:
+                artist = artist or "Unknown Artist"
+                title = title or stem
 
         tracks.append({
             "path": p,
@@ -254,7 +282,7 @@ def parse_custom_styles(trans_style_str):
                 pass
     return styles
 
-def get_transition_mode(idx, global_mode, custom_styles):
+def get_transition_mode(idx, global_mode, custom_styles, last_mode=None):
     if idx in custom_styles:
         mode = custom_styles[idx]
         if mode == "scratch-in":
@@ -262,10 +290,16 @@ def get_transition_mode(idx, global_mode, custom_styles):
         return mode
     if global_mode == "scratch-in":
         return "bass-swap"
-    if global_mode != "dynamic":
+    if global_mode not in ("random", "dynamic"):
         return global_mode
-    patterns = ["bass-swap", "filter-sweep", "echo-out"]
-    return patterns[idx % len(patterns)]
+
+    # Random selection among professional scratch-free transitions
+    candidates = ["bass-swap", "filter-sweep", "echo-out"]
+    if last_mode in candidates and len(candidates) > 1:
+        pool = [c for c in candidates if c != last_mode]
+    else:
+        pool = candidates
+    return random.choice(pool)
 
 # -----------------------------------------------------------------------------
 # ADVANCED DSP TRANSITION BLENDERS
@@ -500,6 +534,7 @@ def render_crossfade_mix(tracks, args, output_file):
     # Determine transition lengths and styles for each transition
     trans_durations = []
     trans_modes = []
+    last_picked_mode = None
 
     for i in range(len(tracks) - 1):
         t_a = tracks[i]
@@ -516,11 +551,12 @@ def render_crossfade_mix(tracks, args, output_file):
         else:
             fade_dur = 16.0 * 4.0 * (60.0 / bpm_a)  # Default 16 bars (64 beats)
 
-        mode = get_transition_mode(i, args.crossfade_mode, custom_styles)
+        mode = get_transition_mode(i, args.crossfade_mode, custom_styles, last_mode=last_picked_mode)
         if bpm_diff > 12.0 and i not in custom_styles:
             # Significant tempo shift across brackets: auto-apply echo-out drop for clean transition
             mode = "echo-out"
 
+        last_picked_mode = mode
         trans_durations.append(fade_dur)
         trans_modes.append(mode)
 

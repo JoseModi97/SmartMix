@@ -44,9 +44,9 @@ def parse_args():
     parser.add_argument(
         "--crossfade-mode",
         type=str,
-        default="dynamic",
-        choices=["dynamic", "bass-swap", "filter-sweep", "echo-out", "equal-power"],
-        help="Global transition style (default: dynamic, alternates bass-swap, filter-sweep, echo-out with zero scratching)"
+        default="random",
+        choices=["random", "dynamic", "bass-swap", "filter-sweep", "echo-out", "equal-power"],
+        help="Global transition style (default: random, dynamically randomizes bass-swap, filter-sweep, echo-out with zero scratching)"
     )
     parser.add_argument(
         "--trans-style",

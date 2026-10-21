@@ -2,56 +2,50 @@
 
 An automated, studio-grade DJ continuous mix generator and cue-transition engine integrated with **VirtualDJ**.
 
-Instead of relying on real-time software crossfaders that can suffer from volume dips, buffer underruns, or rigid timer limits, this project reads your VirtualDJ playlist order and Hotcues to render a mathematically flawless, phrase-aligned, equal-power continuous mix into a single high-fidelity audio master.
+Instead of relying on real-time software crossfaders that can suffer from volume dips, buffer underruns, or rigid timer limits, this project reads your VirtualDJ playlist order and Hotcues to render mathematically flawless, phrase-aligned continuous mixes into high-fidelity audio masters.
 
-> **Branch:** `feature/smart-crossfading` includes dynamic VirtualDJ-inspired crossfading modes (EQ Bass-Swap crossovers, High-Pass filter sweeps, and automatic style alternation).
+---
+
+## Output Options (Dual-Mode Engine)
+
+SmartMix provides **two distinct mixing styles**:
+
+1. **Option 1: Smart Crossfaded Mix (`--mode crossfade`)**
+   - Seamless 16-bar overlaps between **Cue 2** and **Cue 3**.
+   - Quarter-sine equal-power curves ($\cos / \sin$) ensuring perceived loudness remains rock-solid at $100\%$ ($0\text{ dB}$).
+   - VirtualDJ-inspired on-beat crossfading:
+     - **Dynamic Mode (`--crossfade-mode dynamic`):** Tastefully alternates styles across the set.
+     - **EQ Bass-Swap (`--crossfade-mode bass-swap`):** Midpoint low-end crossover preventing log drum mud.
+     - **High-Pass Filter Sweep (`--crossfade-mode filter-sweep`):** Natural exponential decay on outgoing tracks.
+   - Generates: `Amapiano_Continuous_Mix_Crossfaded.mp3`
+
+2. **Option 2: Normal Cut Mix (`--mode normal`)**
+   - Clean, on-beat sequential transitions with **no crossfade overlap**.
+   - Track A plays from Cue 1 to Cue 2 (or Cue 3), cleanly cuts on beat 4, and Track B drops on beat 1 of its Cue 1 with sample-perfect timing.
+   - Micro-faded at boundaries (15ms) to eliminate digital clicks/pops.
+   - Ideal for radio-style cuts, live performance showcases, or fast-paced sets.
+   - Generates: `Amapiano_Continuous_Mix_Normal.mp3`
+
+3. **Both Options Simultaneously (`--mode both`)**
+   - Renders both the Normal and Crossfaded mixes in a single command.
 
 ---
 
 ## Key Features
 
 - **Direct VirtualDJ Playlist Sync:** Automatically parses your active Automix queue (`automix.vdjfolder`) in its exact playback sequence.
-- **VirtualDJ-Inspired Smart Crossfading:**
-  - **Dynamic Mode (`--crossfade-mode dynamic`):** Tastefully alternates transition styles across the mix so blends stay fresh and never sound repetitive or overdone.
-  - **EQ Bass-Swap (`--crossfade-mode bass-swap`):** Clean phrase crossover keeping low-end and log drums punchy with zero bass-clashing mud.
-  - **High-Pass Filter Sweep (`--crossfade-mode filter-sweep`):** Natural exponential decay and frequency wash on outgoing tracks.
-  - **Equal-Power Curve (`--crossfade-mode equal-power`):** Constant $0\text{ dB}$ quarter-sine blend ($\cos^2\theta + \sin^2\theta = 1$) for gentle vocal passages.
 - **Flexible Cue-Driven Transitions:**
   - **Mix In Drop:** Starts each incoming track cleanly at **Cue 1** (or any cue named `Start`, `In`, `Drop`), bypassing silence.
-  - **Fade Out Start:** Initiates the transition window at **Cue 2** (or any cue named `Fade Out`, `Fade`, `Mix Out`).
+  - **Fade Out Start / Normal Cutoff:** Initiates the transition window or cuts at **Cue 2** (or any cue named `Fade Out`, `Fade`, `Mix Out`).
   - **Cutoff / Exit:** Concludes the blend and stops the outgoing track at **Cue 3** (or any cue named `Cut`, `Exit`, `End`).
   - **Performance Cue Freedom:** Tracks can have 4, 6, or 8+ performance cues (for vocals, drops, or scratching)—the mix engine selectively targets transition points while leaving performance cues untouched.
 - **Intelligent BPM & Tempo Matching (RubberBand Engine):**
   - Automatically compares BPMs between consecutive tracks.
   - If a tempo disparity exists ($> 0.3\text{ BPM}$), it applies pitch-preserving time-stretching (**RubberBand / WSOLA**) across the transition window so beatgrids remain locked in phase.
 - **32-Bit Float Mastering:**
-  - Overlapping audio streams are mixed in 32-bit floating-point PCM before being encoded into pristine $320\text{ kbps}$ MP3 with complete ID3 album metadata and tracklists.
+  - Audio streams are processed in 32-bit floating-point PCM before being encoded into pristine $320\text{ kbps}$ MP3 with complete ID3 album metadata and tracklists.
 - **C++ DSP Plugin & VirtualDJ Skin Components:**
   - Includes source code and compiled binaries for the native VirtualDJ C++ DSP engine (`smartmix_engine.cpp` / `SmartMix64.dll`) and skin integration panels.
-
----
-
-## Transition Architecture & Phrasing
-
-The engine splits consecutive track pairs (**Track A** $\rightarrow$ **Track B**) into solo and transition zones based on your cues:
-
-```text
-Track A (Outgoing):
-[ Cue 1 ] =============== Solo Play =============== [ Cue 2 ] -------- 16-Bar Fade Out -------- [ Cue 3 ] (Stops)
-                                                                \                                /
-                                                                 \     TRANSITION WINDOW (T)    /
-                                                                  \     ~32.5s (64 beats)      /
-Track B (Incoming):                                                \                          /
-                                                               [ Cue 1 ] ------ 16-Bar Fade In ------ [ Full Solo Play ] ===>
-```
-
-### The 16-Bar Amapiano / House Phrase Window
-At standard tempos like **$118\text{ BPM}$**:
-- $1\text{ beat} \approx 0.5085\text{ s}$
-- $1\text{ bar} = 4\text{ beats} \approx 2.034\text{ s}$
-- **$16\text{ bars} = 64\text{ beats} \approx 32.54\text{ s}$**
-
-Setting your Cue 2 and Cue 3 across a 16-bar phrase ensures drops, percussion breaks, and vocal entries layer harmoniously.
 
 ---
 
@@ -65,32 +59,31 @@ Setting your Cue 2 and Cue 3 across a 16-bar phrase ensures drops, percussion br
 
 ## Usage Guide
 
-### 1. Dynamic Crossfading (Recommended)
-Generates the mix while tastefully alternating between Bass-Swap, Filter-Sweep, and Smooth Blends:
+### 1. Render Both Options (Default)
+Generates both the Normal Cut MP3 and the Smart Crossfaded MP3:
 
 ```bash
-python generate_mixtape.py --crossfade-mode dynamic
+python generate_mixtape.py --mode both
 ```
 
-### 2. Specific Crossfade Style
-Force a specific transition curve across the whole set:
-
+### 2. Render Only the Smart Crossfaded Mix
 ```bash
-# Punchy low-end swap at midpoint (great for Amapiano & House)
-python generate_mixtape.py --crossfade-mode bass-swap
-
-# Exponential high-pass sweep (great for vocal and melodic sets)
-python generate_mixtape.py --crossfade-mode filter-sweep
+python generate_mixtape.py --mode crossfade --crossfade-mode dynamic
 ```
 
-### 3. Custom Cue Selection
+### 3. Render Only the Normal Cut Mix
+```bash
+python generate_mixtape.py --mode normal
+```
+
+### 4. Custom Cue Selection
 If your tracks use different cue numbers for transitions (e.g. Cue 1 for intro, Cue 4 for fade start, Cue 5 for cutoff):
 
 ```bash
 python generate_mixtape.py --entry-cue 1 --fade-cue 4 --exit-cue 5
 ```
 
-### 4. Multi-Cue Auto Mode (`--use-last-cues`)
+### 5. Multi-Cue Auto Mode (`--use-last-cues`)
 If your songs contain numerous performance hotcues and you want the script to automatically designate the **last two cues** as the fade-out window:
 
 ```bash
@@ -103,19 +96,21 @@ python generate_mixtape.py --use-last-cues
 
 | Argument | Type | Default | Description |
 | :--- | :---: | :---: | :--- |
+| `--mode` | `str` | `both` | `both`, `crossfade`, `normal` |
 | `--crossfade-mode` | `str` | `dynamic` | `dynamic`, `bass-swap`, `filter-sweep`, `equal-power` |
+| `--normal-cutoff` | `str` | `cue2` | `cue2` (radio cut) or `cue3` (full phrase cut) |
 | `--entry-cue` | `int` | `1` | Cue number for track entry / mix-in |
-| `--fade-cue` | `int` | `2` | Cue number where fade-out begins |
+| `--fade-cue` | `int` | `2` | Cue number where fade-out begins / normal cut |
 | `--exit-cue` | `int` | `3` | Cue number where outgoing track cuts off |
 | `--use-last-cues` | `flag` | `False` | Automatically uses the final 2 cues for fade-out |
-| `--output` | `str` | *Default MP3* | Destination path for the exported master file |
+| `--output-dir` | `str` | *Default Dir* | Destination directory for exported MP3s |
 
 ---
 
 ## Repository Structure
 
 ```text
-├── generate_mixtape.py               # Core offline mix generator & smart crossfade engine
+├── generate_mixtape.py               # Core offline mix generator (Dual-Mode: Normal & Crossfade)
 ├── smartmix_engine.cpp               # Native VirtualDJ C++ DSP Plugin source code
 ├── SmartMix64.dll                    # Compiled 64-bit VirtualDJ DSP Plugin binary
 ├── vdjPlugin8.h / vdjDsp8.h          # VirtualDJ Plugin API header definitions

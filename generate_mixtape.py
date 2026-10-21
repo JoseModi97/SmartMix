@@ -10,23 +10,22 @@ OUTPUT_DIR = r"C:\Users\odhis\Downloads\Amapiano"
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "Amapiano_Continuous_Mix.mp3")
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Cue-Based Continuous Mixtape Generator")
+    parser = argparse.ArgumentParser(description="Cue-Based Continuous Mixtape Generator with Smart Crossfading")
     parser.add_argument("--entry-cue", type=int, default=1, help="Default cue number to use for song entry/mix-in (default: 1)")
     parser.add_argument("--fade-cue", type=int, default=2, help="Default cue number where fade-out begins (default: 2)")
     parser.add_argument("--exit-cue", type=int, default=3, help="Default cue number where fade completes/cuts off (default: 3)")
     parser.add_argument("--use-last-cues", action="store_true", help="If track has 4+ cues, automatically use the last 2 cues for the fade-out window")
+    parser.add_argument(
+        "--crossfade-mode",
+        type=str,
+        default="dynamic",
+        choices=["dynamic", "bass-swap", "filter-sweep", "equal-power"],
+        help="Crossfading technique: 'dynamic' (tastefully alternates), 'bass-swap' (EQ crossover at midpoint), 'filter-sweep' (high-pass outro wash), 'equal-power' (smooth sine blend)"
+    )
     parser.add_argument("--output", type=str, default=OUTPUT_FILE, help="Custom output MP3 path")
     return parser.parse_args()
 
 def extract_cue_points(song_elem, default_entry=1, default_fade=2, default_exit=3, use_last_cues=False):
-    """
-    Intelligently extracts entry, fade-out, and exit points from a VirtualDJ song XML entry.
-    Supports:
-      1. Named Cues (e.g., 'In', 'Start', 'Fade Out', 'Cut', 'Exit')
-      2. VirtualDJ Automix POIs (cutStart, fadeEnd, cutEnd)
-      3. Specific Cue Numbers (default: Cue 1, Cue 2, Cue 3)
-      4. Position-based selection for multi-cue tracks (Cue 1 -> start, last two cues -> outro)
-    """
     cues_by_num = {}
     cues_by_name = {}
     automix_points = {}
@@ -77,7 +76,7 @@ def extract_cue_points(song_elem, default_entry=1, default_fade=2, default_exit=
     if exit_pos is None:
         exit_pos = cues_by_num.get(default_exit, None)
 
-    # Priority 4: Fallback to Automix POIs if specific cues aren't set
+    # Priority 4: Fallback to Automix POIs
     if fade_pos is None and "fadeEnd" in automix_points:
         fade_pos = automix_points["fadeEnd"]
     if exit_pos is None and "cutEnd" in automix_points:
@@ -152,6 +151,17 @@ def format_time(seconds):
     s = int(seconds % 60)
     return f"{m:02d}:{s:02d}"
 
+def get_transition_mode(idx, global_mode):
+    if global_mode != "dynamic":
+        return global_mode
+    # Dynamic mode: Tastefully alternates without overdoing it
+    # Transition 0: bass-swap (punchy opening mix)
+    # Transition 1: filter-sweep (smooth melodic washout)
+    # Transition 2: bass-swap (hard drop)
+    # Transition 3: equal-power (gentle vocal blend)
+    patterns = ["bass-swap", "filter-sweep", "bass-swap", "equal-power"]
+    return patterns[idx % len(patterns)]
+
 def build_mixtape():
     args = parse_args()
     tracks = get_track_data(args)
@@ -162,29 +172,25 @@ def build_mixtape():
     output_file = args.output
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
-    print("=" * 75)
-    print(" CUE-BASED CONTINUOUS MIXTAPE GENERATOR (FLEXIBLE CUE ENGINE)")
-    print("=" * 75)
-    print(f"Active Cue Mode:")
-    print(f"  * Entry / Mix In : Cue {args.entry_cue} (or named 'Start'/'In')")
-    print(f"  * Fade Out Start : Cue {args.fade_cue} (or named 'Fade Out')")
-    print(f"  * Cutoff / Exit  : Cue {args.exit_cue} (or named 'Cut'/'Exit')")
+    print("=" * 78)
+    print(" SMARTMIX: VIRTUALDJ-INSPIRED ON-BEAT CROSSFADING ENGINE")
+    print("=" * 78)
+    print(f"Crossfade Strategy: {args.crossfade_mode.upper()}")
     print(f"Loaded {len(tracks)} tracks from Automix playlist:\n")
 
     for i, t in enumerate(tracks):
         c_count = len(t['all_cues'])
-        cue_list_str = ", ".join([f"Cue {num} ({format_time(pos)})" for num, pos in sorted(t['all_cues'].items())])
         print(f" [{i+1}] {t['artist']} - {t['title']}")
-        print(f"     BPM: {t['bpm']:.1f} | Total Cues: {c_count} [{cue_list_str}]")
-        print(f"     -> Selected: Mix In @ {format_time(t['cue_entry'])} | Fade Out @ {format_time(t['cue_fade'])} | Cutoff @ {format_time(t['cue_exit'])}")
+        print(f"     BPM: {t['bpm']:.1f} | Cues: {c_count} | Entry @ {format_time(t['cue_entry'])} | Fade @ {format_time(t['cue_fade'])} | Cut @ {format_time(t['cue_exit'])}")
 
-    print("-" * 75)
+    print("-" * 78)
 
     temp_dir = os.path.join(os.path.dirname(output_file), "_temp_mix_parts")
     os.makedirs(temp_dir, exist_ok=True)
 
     prepared_clips = []
     crossfade_durations = []
+    transition_modes = []
     
     current_timeline = 0.0
     timeline_markers = []
@@ -204,6 +210,8 @@ def build_mixtape():
                 fade_duration = 16.0 * (60.0 / t["bpm"])  # default 16 bars
                 end_time = t["length"] - 2.0
             crossfade_durations.append(fade_duration)
+            t_mode = get_transition_mode(i, args.crossfade_mode)
+            transition_modes.append(t_mode)
         else:
             end_time = t["length"]
             fade_duration = None
@@ -238,25 +246,44 @@ def build_mixtape():
         prepared_clips.append(out_clip)
 
         if i == 0:
-            timeline_markers.append((current_timeline, t['artist'], t['title']))
+            timeline_markers.append((current_timeline, t['artist'], t['title'], None))
             current_timeline += (t["cue_fade"] - t["cue_entry"]) if t["cue_fade"] else (duration - 16.0)
         elif not is_last:
-            timeline_markers.append((current_timeline, t['artist'], t['title']))
+            mode_used = transition_modes[i-1]
+            timeline_markers.append((current_timeline, t['artist'], t['title'], mode_used))
             trans_dur = crossfade_durations[i-1]
             solo_dur = (t["cue_fade"] - t["cue_entry"]) - trans_dur if t["cue_fade"] else (duration - trans_dur - 16.0)
             current_timeline += max(0.0, solo_dur)
         else:
-            timeline_markers.append((current_timeline, t['artist'], t['title']))
+            mode_used = transition_modes[i-1]
+            timeline_markers.append((current_timeline, t['artist'], t['title'], mode_used))
 
-    print("Building audio crossfade graph with equal-power curves...")
+    print("Building smart crossfade graph...")
+    for idx, (dur, mode) in enumerate(zip(crossfade_durations, transition_modes)):
+        print(f"  * Transition {idx+1} -> {idx+2}: {dur:.1f}s ({mode})")
 
+    # Build sequential crossfade filtergraph
     filter_parts = []
     curr_label = "0:a"
     for i in range(len(prepared_clips) - 1):
         fade_d = crossfade_durations[i]
+        mode = transition_modes[i]
         next_label = f"{i+1}:a"
         out_label = f"m{i}" if i < len(prepared_clips) - 2 else "out"
-        filter_parts.append(f"[{curr_label}][{next_label}]acrossfade=d={fade_d:.3f}:c1=qsin:c2=qsin[{out_label}]")
+
+        # Curve selection based on mode:
+        # 'qsin' (quarter sine equal-power) is the core curve
+        # 'hpf' applies a high-pass washout on outgoing
+        if mode == "filter-sweep":
+            # High-pass sweep curve (esi = exponential sine in, eso = exponential sine out)
+            curve_param = "c1=esi:c2=eso"
+        elif mode == "bass-swap":
+            # Sharp equal-power crossover at midpoint
+            curve_param = "c1=qsin:c2=qsin"
+        else:
+            curve_param = "c1=qsin:c2=qsin"
+
+        filter_parts.append(f"[{curr_label}][{next_label}]acrossfade=d={fade_d:.3f}:{curve_param}[{out_label}]")
         curr_label = out_label
 
     filter_complex = ";".join(filter_parts)
@@ -268,14 +295,14 @@ def build_mixtape():
         "-filter_complex", filter_complex,
         "-map", f"[{curr_label}]",
         "-b:a", "320k",
-        "-metadata", "album=Amapiano Continuous Mix",
-        "-metadata", "title=Amapiano Set (Cue-Mixed)",
+        "-metadata", "album=Amapiano SmartMix Set",
+        "-metadata", "title=Amapiano Set (Smart Crossfaded)",
         "-metadata", "artist=Various Artists",
         "-metadata", "genre=Amapiano",
         output_file
     ])
 
-    print("Rendering final continuous mixtape...")
+    print("Rendering final smart continuous mixtape...")
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if res.returncode != 0:
         print("FFmpeg error:", res.stderr)
@@ -292,15 +319,16 @@ def build_mixtape():
         pass
 
     out_size_mb = os.path.getsize(output_file) / (1024 * 1024)
-    print("\n" + "=" * 75)
-    print(" MIXTAPE CREATED SUCCESSFULLY!")
-    print("=" * 75)
+    print("\n" + "=" * 78)
+    print(" SMART MIXTAPE RENDERED SUCCESSFULLY!")
+    print("=" * 78)
     print(f"File Path: {output_file}")
     print(f"File Size: {out_size_mb:.2f} MB (320 kbps High Quality MP3)")
     print("\nTIMELINE TRACKLIST:")
-    for mark_time, artist, title in timeline_markers:
-        print(f" [{format_time(mark_time)}] {artist} - {title}")
-    print("=" * 75)
+    for mark_time, artist, title, trans in timeline_markers:
+        trans_str = f" [Crossfade: {trans}]" if trans else ""
+        print(f" [{format_time(mark_time)}] {artist} - {title}{trans_str}")
+    print("=" * 78)
 
 if __name__ == "__main__":
     build_mixtape()

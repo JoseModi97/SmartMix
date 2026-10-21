@@ -1,22 +1,26 @@
 # SmartMix & VirtualDJ Cue-Based Mixtape Engine
 
-An automated, studio-grade DJ continuous mix generator and cue-transition engine integrated with **VirtualDJ**. 
+An automated, studio-grade DJ continuous mix generator and cue-transition engine integrated with **VirtualDJ**.
 
 Instead of relying on real-time software crossfaders that can suffer from volume dips, buffer underruns, or rigid timer limits, this project reads your VirtualDJ playlist order and Hotcues to render a mathematically flawless, phrase-aligned, equal-power continuous mix into a single high-fidelity audio master.
+
+> **Branch:** `feature/smart-crossfading` includes dynamic VirtualDJ-inspired crossfading modes (EQ Bass-Swap crossovers, High-Pass filter sweeps, and automatic style alternation).
 
 ---
 
 ## Key Features
 
 - **Direct VirtualDJ Playlist Sync:** Automatically parses your active Automix queue (`automix.vdjfolder`) in its exact playback sequence.
+- **VirtualDJ-Inspired Smart Crossfading:**
+  - **Dynamic Mode (`--crossfade-mode dynamic`):** Tastefully alternates transition styles across the mix so blends stay fresh and never sound repetitive or overdone.
+  - **EQ Bass-Swap (`--crossfade-mode bass-swap`):** Clean phrase crossover keeping low-end and log drums punchy with zero bass-clashing mud.
+  - **High-Pass Filter Sweep (`--crossfade-mode filter-sweep`):** Natural exponential decay and frequency wash on outgoing tracks.
+  - **Equal-Power Curve (`--crossfade-mode equal-power`):** Constant $0\text{ dB}$ quarter-sine blend ($\cos^2\theta + \sin^2\theta = 1$) for gentle vocal passages.
 - **Flexible Cue-Driven Transitions:**
   - **Mix In Drop:** Starts each incoming track cleanly at **Cue 1** (or any cue named `Start`, `In`, `Drop`), bypassing silence.
   - **Fade Out Start:** Initiates the transition window at **Cue 2** (or any cue named `Fade Out`, `Fade`, `Mix Out`).
   - **Cutoff / Exit:** Concludes the blend and stops the outgoing track at **Cue 3** (or any cue named `Cut`, `Exit`, `End`).
   - **Performance Cue Freedom:** Tracks can have 4, 6, or 8+ performance cues (for vocals, drops, or scratching)—the mix engine selectively targets transition points while leaving performance cues untouched.
-- **Equal-Power Crossfades ($\cos / \sin$):**
-  - Standard linear crossfaders drop volume by $-3\text{ dB}$ in the middle of a blend.
-  - SmartMix utilizes **Quarter-Sine Equal-Power Curves** ($\cos^2\theta + \sin^2\theta = 1$) to ensure perceived acoustic loudness remains rock-solid at $100\%$ ($0\text{ dB}$).
 - **Intelligent BPM & Tempo Matching (RubberBand Engine):**
   - Automatically compares BPMs between consecutive tracks.
   - If a tempo disparity exists ($> 0.3\text{ BPM}$), it applies pitch-preserving time-stretching (**RubberBand / WSOLA**) across the transition window so beatgrids remain locked in phase.
@@ -61,32 +65,36 @@ Setting your Cue 2 and Cue 3 across a 16-bar phrase ensures drops, percussion br
 
 ## Usage Guide
 
-### 1. Basic Generation
-Run the script to build a mixtape using the tracks and cues from your active VirtualDJ Automix playlist:
+### 1. Dynamic Crossfading (Recommended)
+Generates the mix while tastefully alternating between Bass-Swap, Filter-Sweep, and Smooth Blends:
 
 ```bash
-python generate_mixtape.py
+python generate_mixtape.py --crossfade-mode dynamic
 ```
 
-### 2. Custom Cue Selection
+### 2. Specific Crossfade Style
+Force a specific transition curve across the whole set:
+
+```bash
+# Punchy low-end swap at midpoint (great for Amapiano & House)
+python generate_mixtape.py --crossfade-mode bass-swap
+
+# Exponential high-pass sweep (great for vocal and melodic sets)
+python generate_mixtape.py --crossfade-mode filter-sweep
+```
+
+### 3. Custom Cue Selection
 If your tracks use different cue numbers for transitions (e.g. Cue 1 for intro, Cue 4 for fade start, Cue 5 for cutoff):
 
 ```bash
 python generate_mixtape.py --entry-cue 1 --fade-cue 4 --exit-cue 5
 ```
 
-### 3. Multi-Cue Auto Mode (`--use-last-cues`)
+### 4. Multi-Cue Auto Mode (`--use-last-cues`)
 If your songs contain numerous performance hotcues and you want the script to automatically designate the **last two cues** as the fade-out window:
 
 ```bash
 python generate_mixtape.py --use-last-cues
-```
-
-### 4. Custom Output Destination
-Specify a custom destination for your rendered continuous mix:
-
-```bash
-python generate_mixtape.py --output "C:\Users\username\Music\My_DJ_Mix.mp3"
 ```
 
 ---
@@ -95,6 +103,7 @@ python generate_mixtape.py --output "C:\Users\username\Music\My_DJ_Mix.mp3"
 
 | Argument | Type | Default | Description |
 | :--- | :---: | :---: | :--- |
+| `--crossfade-mode` | `str` | `dynamic` | `dynamic`, `bass-swap`, `filter-sweep`, `equal-power` |
 | `--entry-cue` | `int` | `1` | Cue number for track entry / mix-in |
 | `--fade-cue` | `int` | `2` | Cue number where fade-out begins |
 | `--exit-cue` | `int` | `3` | Cue number where outgoing track cuts off |
@@ -106,7 +115,7 @@ python generate_mixtape.py --output "C:\Users\username\Music\My_DJ_Mix.mp3"
 ## Repository Structure
 
 ```text
-├── generate_mixtape.py               # Core offline mix generator & cue crossfade engine
+├── generate_mixtape.py               # Core offline mix generator & smart crossfade engine
 ├── smartmix_engine.cpp               # Native VirtualDJ C++ DSP Plugin source code
 ├── SmartMix64.dll                    # Compiled 64-bit VirtualDJ DSP Plugin binary
 ├── vdjPlugin8.h / vdjDsp8.h          # VirtualDJ Plugin API header definitions

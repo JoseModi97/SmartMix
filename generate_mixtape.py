@@ -63,9 +63,9 @@ def parse_args():
     parser.add_argument(
         "--mode",
         type=str,
-        default="crossfade",
-        choices=["crossfade", "normal", "both"],
-        help="Rendering mode: 'crossfade' (default: gradual cue transitions), 'normal' (sequential drops), or 'both'"
+        default="normal",
+        choices=["normal", "crossfade", "both"],
+        help="Rendering mode: 'normal' (default: clean cue-drop cuts, zero crossfade), 'crossfade' (gradual cue transitions), or 'both'"
     )
     parser.add_argument(
         "--crossfade-mode",
@@ -375,12 +375,20 @@ def render_normal_mix(tracks, args, output_file):
 
         start_time = t["cue_entry"]
 
+        cutoff_pref = getattr(args, "normal_cutoff", "cue2")
         if is_last:
-            end_time = t["length"]
-        else:
-            if args.normal_cutoff == "cue2" and t["cue_fade"] is not None:
+            if cutoff_pref == "cue2" and t["cue_fade"] is not None and t["cue_fade"] > start_time:
                 end_time = t["cue_fade"]
-            elif t["cue_exit"] is not None:
+            elif t["cue_exit"] is not None and t["cue_exit"] > start_time:
+                end_time = t["cue_exit"]
+            else:
+                end_time = t["length"]
+        else:
+            if cutoff_pref == "cue3" and t["cue_exit"] is not None and t["cue_exit"] > start_time:
+                end_time = t["cue_exit"]
+            elif t["cue_fade"] is not None and t["cue_fade"] > start_time:
+                end_time = t["cue_fade"]
+            elif t["cue_exit"] is not None and t["cue_exit"] > start_time:
                 end_time = t["cue_exit"]
             else:
                 end_time = t["length"] - 2.0

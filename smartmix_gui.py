@@ -211,20 +211,25 @@ class SmartMixApp:
         opts_row = ctk.CTkFrame(settings_card, fg_color="transparent") if ctk else tk.Frame(settings_card)
         opts_row.pack(fill="x", padx=14, pady=8)
 
-        # Transition Style
-        col_trans = ctk.CTkFrame(opts_row, fg_color="transparent") if ctk else tk.Frame(opts_row)
-        col_trans.pack(side="left", fill="x", expand=True, padx=6)
+        # Transition Mode: Normal Cut vs Gradual Crossfade vs Both
+        col_mode = ctk.CTkFrame(opts_row, fg_color="transparent") if ctk else tk.Frame(opts_row)
+        col_mode.pack(side="left", fill="x", expand=True, padx=6)
         if ctk:
-            ctk.CTkLabel(col_trans, text="Transition Style:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w")
-            self.trans_mode_var = tk.StringVar(value="gradual")
-            self.opt_trans = ctk.CTkOptionMenu(
-                col_trans,
-                values=["gradual", "equal-power"],
-                variable=self.trans_mode_var
+            ctk.CTkLabel(col_mode, text="Transition Mode:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w")
+            self.mode_var = tk.StringVar(value="Normal Transition (Clean Cut, Zero Overlap)")
+            self.mode_var.trace_add("write", lambda *args: self._update_preview_path())
+            self.opt_mode = ctk.CTkOptionMenu(
+                col_mode,
+                values=[
+                    "Normal Transition (Clean Cut, Zero Overlap)",
+                    "Gradual DJ Crossfade (Cue 2 -> Cue 3)",
+                    "Both (Normal & Crossfaded)"
+                ],
+                variable=self.mode_var
             )
-            self.opt_trans.pack(fill="x", pady=4)
+            self.opt_mode.pack(fill="x", pady=4)
         else:
-            self.trans_mode_var = tk.StringVar(value="gradual")
+            self.mode_var = tk.StringVar(value="Normal Transition (Clean Cut, Zero Overlap)")
 
         # Target Loudness
         col_loud = ctk.CTkFrame(opts_row, fg_color="transparent") if ctk else tk.Frame(opts_row)
@@ -358,7 +363,14 @@ class SmartMixApp:
     def _update_preview_path(self):
         mix_name = (self.mix_name_var.get() or "Amapiano").strip()
         dest_dir = self.dest_var.get().strip() or str(Path.home() / "Downloads")
-        out_file = os.path.join(dest_dir, f"{mix_name}_Continuous_Mix_Crossfaded.mp3")
+        mode_val = self.mode_var.get() if hasattr(self, "mode_var") else "Normal"
+        if "Crossfade" in mode_val:
+            suffix = "Crossfaded"
+        elif "Both" in mode_val:
+            suffix = "Normal & Crossfaded"
+        else:
+            suffix = "Normal"
+        out_file = os.path.join(dest_dir, f"{mix_name}_Continuous_Mix_{suffix}.mp3")
         if hasattr(self, "lbl_preview_path"):
             if ctk:
                 self.lbl_preview_path.configure(text=out_file)
@@ -461,10 +473,19 @@ class SmartMixApp:
         elif "-2.0" in raw_tp:
             true_peak = -2.0
 
-        trans_mode = self.trans_mode_var.get()
-        with_scratch = self.with_scratch_var.get()
+        mode_str = self.mode_var.get() if hasattr(self, "mode_var") else "Normal"
+        if "Crossfade" in mode_str:
+            target_mode = "crossfade"
+            suffix = "Crossfaded"
+        elif "Both" in mode_str:
+            target_mode = "both"
+            suffix = "Normal"
+        else:
+            target_mode = "normal"
+            suffix = "Normal"
 
-        out_file = os.path.join(dest_dir, f"{mix_name}_Continuous_Mix_Crossfaded.mp3")
+        with_scratch = self.with_scratch_var.get()
+        out_file = os.path.join(dest_dir, f"{mix_name}_Continuous_Mix_{suffix}.mp3")
         self.last_output_file = out_file
 
         # UI state during compiling
@@ -486,7 +507,7 @@ class SmartMixApp:
         self.log_console(f"Mix Title   : {mix_name}\n")
         self.log_console(f"Destination : {dest_dir}\n")
         self.log_console(f"Output File : {out_file}\n")
-        self.log_console(f"Transitions : {trans_mode.upper()} (Cue 2 -> Cue 3 Gradual Crossfade)\n")
+        self.log_console(f"Mode        : {target_mode.upper()} ({'Clean Cue-Drop Transitions, Zero Crossfade' if target_mode == 'normal' else 'Gradual Crossfade' if target_mode == 'crossfade' else 'Both Normal and Crossfade'})\n")
         self.log_console("-" * 72 + "\n")
 
         # Launch compilation in background worker thread
@@ -495,7 +516,7 @@ class SmartMixApp:
             os.path.join(os.path.dirname(__file__), "smartmix.py"),
             "--mix-name", mix_name,
             "--output-dir", dest_dir,
-            "--crossfade-mode", trans_mode,
+            "--mode", target_mode,
             "--target-lufs", str(target_lufs),
             "--true-peak", str(true_peak)
         ]

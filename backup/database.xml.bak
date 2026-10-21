@@ -1,0 +1,938 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VirtualDJ_Database Version="2026">
+ <Song FilePath="C:\Users\odhis\Downloads\Music\J Cole &apos;The Blow Up&apos; - Instrumental.mp3" FileSize="3635724" Flag="268435456">
+  <Tags Flag="1" />
+  <Infos SongLength="238.190295" LastModified="1777641189" FirstSeen="1777641092" FirstPlay="1777641189" LastPlay="1777641189" PlayCount="1" Bitrate="122" Cover="16386" />
+  <Scan Version="801" Bpm="0.379751" Phase="18.525238" AltBpm="0.569615" Volume="0.854337" Key="G#" AudioSig="qi64tsVBV7lX9p3GdjFhIjEH" Flag="8421376" />
+  <Poi Pos="0.660317" Type="automix" Point="realStart" />
+  <Poi Pos="231.211247" Type="automix" Point="realEnd" />
+  <Poi Pos="0.660317" Type="automix" Point="fadeStart" />
+  <Poi Pos="231.0" Type="automix" Point="fadeEnd" />
+  <Poi Pos="25.931610" Type="automix" Point="cutStart" />
+  <Poi Pos="227.007710" Type="automix" Point="cutEnd" />
+  <Poi Name="Break 1" Pos="84.983583" Type="remix" />
+  <Poi Name="End Break 1" Pos="97.512925" Type="remix" />
+  <Poi Name="Break 2" Pos="194.350295" Type="remix" />
+  <Poi Name="End Break 2" Pos="206.879637" Type="remix" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\outer.mp3" FileSize="602599">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="25.0" LastModified="1781692222" FirstSeen="1781692222" Bitrate="193" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-17</Comment>
+  <Poi Name="PHY feat. King Kaka &amp; Khaligraph Jones - RUKA" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\outer (1).mp3" FileSize="1571846">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="65.0" LastModified="1781692295" FirstSeen="1781692294" Bitrate="193" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-17</Comment>
+  <Poi Name="PHY feat. King Kaka &amp; Khaligraph Jones - RUKA" Num="1" Type="cue" />
+ </Song>                                                                                                        
+ <Song FilePath="C:\Users\odhis\Desktop\mercy fast.mp3" FileSize="4967973">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="206.0" LastModified="1778513726" FirstSeen="1778513690" Bitrate="193" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-05-11</Comment>
+  <Poi Name="Virusi Mbaya feat. Scar Mkadinali – Have Mercy (The Watcher) - Official Audio" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Queen - Bohemian Rhapsody.mid" FileSize="51221">
+  <Tags Flag="2" />
+  <Infos LastModified="1782024454" FirstSeen="1782024453" Cover="16384" />
+ </Song>                                                                                         
+ <Song FilePath="C:\Users\odhis\Downloads\Virusi Mbaya ft Scar Mkadinali – Have Mercy (The Watcher) _ Official Audio.mp4" FileSize="12192093" Flag="64">
+  <Tags Flag="1" />
+  <Infos SongLength="216.851133" LastModified="1778510175" FirstSeen="1778510168" Bitrate="446" Cover="16386" />
+  <Scan Version="801" Bpm="0.615442" Phase="0.086984" AltBpm="0.461576" Volume="1.019440" Key="D" AudioSig="eXFIh1Z3aXhHQUGmd2_kb7oG" Flag="32768" />
+  <Poi Pos="0.120454" Type="automix" Point="realStart" />
+  <Poi Pos="216.266304" Type="automix" Point="realEnd" />
+  <Poi Pos="0.70" Type="automix" Point="fadeStart" />
+  <Poi Pos="214.950" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.122630" Type="automix" Point="cutStart" />
+  <Poi Pos="205.341315" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\MediaHuman\Video\Virusi Mbaya - Have Mercy ft Scar Mkadinali  (Official Video).webm" FileSize="688659465" Flag="64">
+  <Tags Remix="Official Video" Flag="1" />
+  <Infos SongLength="212.666958" LastModified="1778510213" FirstSeen="1778510184" Bitrate="25903" Cover="16384" />
+  <Scan Version="801" Bpm="0.588231" Phase="8.053061" AltBpm="0.514739" Volume="1.522037" Key="C#" AudioSig="qWFopraWmZg3EEHGdk-QYY4G" Flag="8421376" />
+  <Poi Pos="0.0280" Type="automix" Point="realStart" />
+  <Poi Pos="210.394667" Type="automix" Point="realEnd" />
+  <Poi Pos="0.60" Type="automix" Point="fadeStart" />
+  <Poi Pos="208.950" Type="automix" Point="fadeEnd" />
+  <Poi Pos="9.436009" Type="automix" Point="cutStart" />
+  <Poi Pos="200.699501" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Kendrick Lamar - i (Audio).mp3" FileSize="5539768" Flag="268435456">
+  <Tags Remix="Audio" Flag="1" />
+  <Infos SongLength="230.759909" LastModified="1780824991" FirstSeen="1780824362" Bitrate="192" Cover="16386" />
+  <Scan Version="801" Bpm="0.492109" Phase="4.071814" AltBpm="0.738186" Volume="1.300458" Key="Cm" AudioSig="eKdoZ3d1aGhXy5iGV6jXyBkH" Flag="32768" />
+  <Poi Pos="0.123356" Type="automix" Point="realStart" />
+  <Poi Pos="228.025760" Type="automix" Point="realEnd" />
+  <Poi Pos="0.650" Type="automix" Point="fadeStart" />
+  <Poi Pos="221.10" Type="automix" Point="fadeEnd" />
+  <Poi Pos="4.073651" Type="automix" Point="cutStart" />
+  <Poi Pos="209.160272" Type="automix" Point="cutEnd" />
+ </Song>                           
+ <Song FilePath="C:\Users\odhis\Videos\Virusi Mbaya - Have Mercy Ft Scar Mkadinali  (Official Video)-1.m4v" FileSize="219568881" Flag="64">
+  <Tags Remix="Official Video" Flag="1" />
+  <Infos SongLength="212.6720" LastModified="1778513451" FirstSeen="1778513447" Bitrate="8251" Cover="2" />
+  <Scan Version="801" Bpm="0.588231" Phase="10.405352" AltBpm="0.514739" Volume="1.403504" Key="C#" AudioSig="qVBopraWmJg3EDHGdj-AUY4G" Flag="8421376" />
+  <Poi Pos="0.0280" Type="automix" Point="realStart" />
+  <Poi Pos="210.394667" Type="automix" Point="realEnd" />
+  <Poi Pos="0.60" Type="automix" Point="fadeStart" />
+  <Poi Pos="208.950" Type="automix" Point="fadeEnd" />
+  <Poi Pos="10.315465" Type="automix" Point="cutStart" />
+  <Poi Pos="200.696599" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Virusi Mbaya ft Scar Mkadinali – Have Mercy (The Watcher) _ Official Audio.mp3" FileSize="8726749">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="218.122449" LastModified="1778513527" FirstSeen="1778513440" FirstPlay="1778513527" LastPlay="1778513527" PlayCount="1" Bitrate="320" Cover="2" />
+  <Scan Version="801" Bpm="0.615442" Phase="0.090884" AltBpm="0.461576" Volume="1.013910" Key="D" AudioSig="eXFIh1Z3aXhHQUGmd2_kb7oG" Flag="32768" />
+  <Poi Pos="0.124807" Type="automix" Point="realStart" />
+  <Poi Pos="216.270658" Type="automix" Point="realEnd" />
+  <Poi Pos="0.750" Type="automix" Point="fadeStart" />
+  <Poi Pos="214.950" Type="automix" Point="fadeEnd" />
+  <Poi Pos="1.049977" Type="automix" Point="cutStart" />
+  <Poi Pos="205.344943" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\lyricali.mp3" FileSize="222674">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="9.0" LastModified="1780827167" FirstSeen="1780827167" Bitrate="198" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-07</Comment>
+  <Poi Name="TOXIC LYRIKALI - HATE (Audio)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\lyricali (1).mp3" FileSize="573133">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="23.0" LastModified="1780827201" FirstSeen="1780827201" Bitrate="199" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-07</Comment>
+  <Poi Name="TOXIC LYRIKALI - HATE (Audio)" Num="1" Type="cue" />
+ </Song>                                                                                                      
+ <Song FilePath="C:\Users\odhis\Downloads\WhatsApp Audio 2026-06-01 at 5.58.46 PM.mpeg" FileSize="6572407" Flag="33554432">
+  <Tags Flag="2" />
+  <Infos SongLength="164.310204" LastModified="1781693254" FirstSeen="1780326370" FirstPlay="1780327188" LastPlay="1781693254" PlayCount="2" Bitrate="320" Cover="32" />
+  <Scan Version="801" Bpm="0.461542" Phase="0.062517" AltBpm="0.692313" Volume="0.623078" Key="C#m" AudioSig="OIF3d-VneWdHfNtnp76yHxUF" Flag="32768" />
+  <Poi Pos="0.058050" Type="automix" Point="realStart" />
+  <Poi Pos="164.246349" Type="automix" Point="realEnd" />
+  <Poi Pos="0.40" Type="automix" Point="fadeStart" />
+  <Poi Pos="162.50" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.755374" Type="automix" Point="cutStart" />
+  <Poi Pos="160.684989" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Kendrick-Lamar-Ft.-ScHoolboy-Q-The-Spiteful-Chant-Instrumental-Prod.-By-Dave-Free-Sounwave.mp3" FileSize="12818264">
+  <Tags Flag="1" />
+  <Infos SongLength="320.731429" LastModified="1780327190" FirstSeen="1780327111" FirstPlay="1780327190" LastPlay="1780327190" PlayCount="1" Bitrate="320" Cover="34" />
+  <Scan Version="801" Bpm="0.472438" Phase="45.521610" AltBpm="0.708662" Volume="0.761126" Key="Cm" AudioSig="iXqphaZnmXiXrDiXhzt1YQIK" Flag="32768" />
+  <Poi Pos="0.172698" Type="automix" Point="realStart" />
+  <Poi Pos="320.087075" Type="automix" Point="realEnd" />
+  <Poi Pos="28.650" Type="automix" Point="fadeStart" />
+  <Poi Pos="316.750" Type="automix" Point="fadeEnd" />
+  <Poi Pos="60.401633" Type="automix" Point="cutStart" />
+  <Poi Pos="312.690068" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\lyricali (2).mp3" FileSize="262171">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="10.0" LastModified="1780827226" FirstSeen="1780827226" Bitrate="210" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-07</Comment>
+  <Poi Name="TOXIC LYRIKALI - HATE (Audio)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\lyricali (3).mp3" FileSize="439595">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="18.0" LastModified="1780827251" FirstSeen="1780827251" Bitrate="195" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-07</Comment>
+  <Poi Name="TOXIC LYRIKALI - HATE (Audio)" Num="1" Type="cue" />
+ </Song>                                                                                                              
+ <Song FilePath="C:\Users\odhis\Downloads\Ghetts  Microsoft Word [Music Video]  GRM Daily.mp3" FileSize="3695762" Flag="33554448">
+  <Tags Remix="Music Video" Flag="1" />
+  <Infos SongLength="237.772336" LastModified="1787391671" FirstSeen="1780329332" FirstPlay="1780458045" LastPlay="1780458045" PlayCount="1" Bitrate="124" Cover="16386" />
+  <Scan Version="801" Bpm="0.483866" Phase="11.877755" AltBpm="0.725805" Volume="0.631965" Key="G#" AudioSig="WHN3R6Z3eVdolpd2Z62miNwG" Flag="8421376" />
+  <Poi Pos="8.645079" Type="automix" Point="realStart" />
+  <Poi Pos="228.803628" Type="automix" Point="realEnd" />
+  <Poi Pos="11.850" Type="automix" Point="fadeStart" />
+  <Poi Pos="228.450" Type="automix" Point="fadeEnd" />
+  <Poi Pos="11.875556" Type="automix" Point="cutStart" />
+  <Poi Pos="228.410340" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Locked in (feat. Lowki the Great).mp3" FileSize="1935632" Flag="33554448">
+  <Tags Flag="1" />
+  <Infos SongLength="117.910930" LastModified="1787391676" FirstSeen="1780329851" FirstPlay="1780458049" LastPlay="1780458049" PlayCount="1" Bitrate="131" Cover="16386" />
+  <Scan Version="801" Bpm="0.461531" Phase="3.486281" AltBpm="0.692290" Volume="1.320322" Key="Dm" AudioSig="qepnd4ZoaHg3uoJnZzDFPp4D" Flag="32768" />
+  <Poi Pos="0.018866" Type="automix" Point="realStart" />
+  <Poi Pos="117.355102" Type="automix" Point="realEnd" />
+  <Poi Pos="0.050" Type="automix" Point="fadeStart" />
+  <Poi Pos="108.40" Type="automix" Point="fadeEnd" />
+  <Poi Pos="1.179864" Type="automix" Point="cutStart" />
+  <Poi Name="Break 1" Pos="27.018594" Type="remix" />
+  <Poi Name="End Break 1" Pos="51.486621" Type="remix" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\wanjiruakinyi.mp3" FileSize="10104274">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="252.0" LastModified="1785571806" FirstSeen="1785571802" Bitrate="321" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-08-01</Comment>
+  <Poi Name="Khaligraph Jones - Wanjiru &amp; Akinyi (SPOTISAVER)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\wanjiruakinyi (1).mp3" FileSize="6446086">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="161.0" LastModified="1785746133" FirstSeen="1785745732" Bitrate="320" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-08-03</Comment>
+  <Poi Name="Khaligraph Jones - Wanjiru &amp; Akinyi (SPOTISAVER)" Num="1" Type="cue" />
+ </Song>                                                                            
+ <Song FilePath="C:\Users\odhis\Desktop\lyricali (4).mp3" FileSize="1443951">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="60.0" LastModified="1780827325" FirstSeen="1780827321" Bitrate="193" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-07</Comment>
+  <Poi Name="TOXIC LYRIKALI - HATE (Audio)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\bassline.mp3" FileSize="711059">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="29.0" LastModified="1781688763" FirstSeen="1781688763" Bitrate="196" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-17</Comment>
+  <Poi Name="feat. Lowki the Great - Locked in" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\TOXIC LYRIKALI - HATE (Audio).mp3" FileSize="3638798" Flag="301989904">
+  <Tags Remix="Audio" Flag="1" />
+  <Infos SongLength="206.518277" LastModified="1787391679" FirstSeen="1780824984" FirstPlay="1780825193" LastPlay="1780825193" PlayCount="1" Bitrate="141" Cover="34" />
+  <Scan Version="801" Bpm="0.666667" Phase="21.461632" AltBpm="0.50" Volume="1.403536" Key="Ebm" AudioSig="aXpoZ3VWaIhng7nGd9W4pkIG" Flag="32768" />
+  <Poi Pos="0.489070" Type="automix" Point="realStart" />
+  <Poi Pos="202.972880" Type="automix" Point="realEnd" />
+  <Poi Pos="21.20" Type="automix" Point="fadeStart" />
+  <Poi Pos="181.150" Type="automix" Point="fadeEnd" />
+  <Poi Pos="21.461043" Type="automix" Point="cutStart" />
+  <Poi Pos="169.976599" Type="automix" Point="cutEnd" />
+  <Poi Pos="21.481915" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Drake-0-to-100-Instrumental-Prod.-By-Vinylz-Boi-1da.mp3" FileSize="2697728">
+  <Tags Flag="1" />
+  <Infos SongLength="67.500408" LastModified="1792484806" FirstSeen="1780824998" FirstPlay="1780827124" LastPlay="1792484806" PlayCount="2" Bitrate="320" Cover="34" />
+  <Scan Version="801" Bpm="0.681814" Phase="11.456372" AltBpm="0.511361" Volume="0.893281" Key="Em" AudioSig="ifdJV4ZUd1lmIMqnOMd-8PsB" Flag="8421376" />
+  <Poi Pos="0.179955" Type="automix" Point="realStart" />
+  <Poi Pos="65.677642" Type="automix" Point="realEnd" />
+  <Poi Pos="0.250" Type="automix" Point="fadeStart" />
+  <Poi Pos="65.50" Type="automix" Point="fadeEnd" />
+  <Poi Pos="11.113651" Type="automix" Point="cutStart" />
+  <Poi Pos="65.494059" Type="automix" Point="cutEnd" />
+  <Poi Pos="0.184668" Num="1" Type="cue" />
+  <Poi Pos="11.083863" Num="2" Type="cue" />
+ </Song>                                                                                                                                            
+ <Song FilePath="C:\Users\odhis\Desktop\!!overflow 170 - smo.mp3" FileSize="4112161">
+  <Tags Year="2023" Bpm="0.352941" Flag="1" />
+  <Infos SongLength="146.860408" LastModified="1780904307" FirstSeen="1780904302" Bitrate="224" Cover="34" />
+  <Scan Version="801" Bpm="0.372778" Phase="35.912132" AltBpm="0.820522" Volume="0.417689" Key="F" AudioSig="ivZ5RaRPial2Py2VVnkTAIwE" Flag="8421376" />
+  <Poi Pos="0.026122" Type="automix" Point="realStart" />
+  <Poi Pos="146.851701" Type="automix" Point="realEnd" />
+  <Poi Pos="0.050" Type="automix" Point="fadeStart" />
+  <Poi Pos="146.70" Type="automix" Point="fadeEnd" />
+  <Poi Name="Break 1" Pos="42.850249" Type="remix" />
+  <Poi Name="End Break 1" Pos="56.346122" Type="remix" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\!!overflow 170 - smo - Copy.mp3" FileSize="4112161" Flag="33554432">
+  <Tags Year="2023" Bpm="0.352941" Flag="1" />
+  <Infos SongLength="146.860408" LastModified="1780918884" FirstSeen="1780912699" FirstPlay="1780918884" LastPlay="1780918884" PlayCount="1" Bitrate="224" Cover="34" />
+  <Scan Version="801" Bpm="0.372778" Phase="1.616576" AltBpm="0.820522" Volume="0.417689" Key="F" AudioSig="ivZ5RaRPial2Py2VVnkTAIwE" Flag="8421376" />
+  <Poi Pos="0.026122" Type="automix" Point="realStart" />
+  <Poi Pos="146.851701" Type="automix" Point="realEnd" />
+  <Poi Pos="0.050" Type="automix" Point="fadeStart" />
+  <Poi Pos="146.70" Type="automix" Point="fadeEnd" />
+  <Poi Name="Break 1" Pos="42.850249" Type="remix" />
+  <Poi Name="End Break 1" Pos="56.346122" Type="remix" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\bassline (1).mp3" FileSize="709178">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="29.0" LastModified="1781689830" FirstSeen="1781689426" Bitrate="196" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-17</Comment>
+  <Poi Name="feat. Lowki the Great - Locked in" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Music\PHY - RUKA  ft. King Kaka &amp; Khaligraph Jones.mp3" FileSize="6254478" Flag="33554432">
+  <Tags Flag="1" />
+  <Infos SongLength="260.527891" LastModified="1787392139" FirstSeen="1777640850" FirstPlay="1777641097" LastPlay="1787392139" PlayCount="3" Bitrate="192" Cover="16386" />
+  <Scan Version="801" Bpm="0.389626" Phase="27.525011" AltBpm="0.584422" Volume="1.597798" Key="Cm" AudioSig="aXxoZ2d2aGhYqpmWZ5ncproH" Flag="32768" />
+  <Poi Pos="2.326349" Type="automix" Point="realStart" />
+  <Poi Pos="252.366077" Type="automix" Point="realEnd" />
+  <Poi Pos="21.30" Type="automix" Point="fadeStart" />
+  <Poi Pos="243.10" Type="automix" Point="fadeEnd" />
+  <Poi Pos="8.678458" Type="automix" Point="cutStart" />
+  <Poi Pos="241.460680" Type="automix" Point="cutEnd" />
+  <Poi Pos="33.774467" Num="1" Type="cue" />
+  <Poi Pos="58.708612" Num="2" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\outer (2).mp3" FileSize="1575608">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="65.0" LastModified="1781692482" FirstSeen="1781692482" Bitrate="194" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-17</Comment>
+  <Poi Name="PHY feat. King Kaka &amp; Khaligraph Jones - RUKA" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\outer (3).mp3" FileSize="219539">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="9.0" LastModified="1781693363" FirstSeen="1781692935" Bitrate="195" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-17</Comment>
+  <Poi Name="PHY feat. King Kaka &amp; Khaligraph Jones - RUKA" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Videos\Fendi Seats.mp4" FileSize="18089197" Flag="64">
+  <Tags Flag="1" />
+  <Infos SongLength="170.132608" LastModified="1781932089" FirstSeen="1781932086" Bitrate="845" Cover="16386" />
+  <Scan Version="801" Bpm="0.3750" Phase="5.999547" AltBpm="0.562494" Volume="0.959573" Key="A" AudioSig="acd4V1eYeGdXo4l3p4IelTkF" Flag="32768" />
+  <Poi Pos="0.007256" Type="automix" Point="realStart" />
+  <Poi Pos="168.164717" Type="automix" Point="realEnd" />
+  <Poi Pos="6.0" Type="automix" Point="fadeStart" />
+  <Poi Pos="167.80" Type="automix" Point="fadeEnd" />
+  <Poi Pos="7.496417" Type="automix" Point="cutStart" />
+  <Poi Pos="167.814240" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\outerdomani price.mp3" FileSize="134276">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="5.0" LastModified="1781934621" FirstSeen="1781934621" Bitrate="215" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-20</Comment>
+  <Poi Name="Domani Munga - MUNGU 4 (1, Official Music Video)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\outerdomani price (1).mp3" FileSize="3909701">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="162.0" LastModified="1781934802" FirstSeen="1781934802" Bitrate="193" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-20</Comment>
+  <Poi Name="Domani Munga - MUNGU 4 (1, Official Music Video)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Under-The-Sea-(From-&apos;The-Little-Mermaid&apos;)-1 - Copy.mp3" FileSize="61865">
+  <Tags Flag="2" />
+  <Infos LastModified="1789902808" FirstSeen="1789902807" Cover="16384" />
+ </Song>    
+ <Song FilePath="C:\Users\odhis\Downloads\Hush (Instrumental).mp3" FileSize="2439962">
+  <Tags Remix="Instrumental" Flag="1" />
+  <Infos SongLength="157.013333" LastModified="1781933041" FirstSeen="1781932993" FirstPlay="1781933041" LastPlay="1781933041" PlayCount="1" Bitrate="124" Cover="16386" />
+  <Scan Version="801" Bpm="0.701746" Phase="0.013107" AltBpm="0.526304" Volume="1.456901" Key="G#" AudioSig="WS9oh1dVZ7g29-aGhyBt68AE" Flag="32768" />
+  <Poi Pos="0.037732" Type="automix" Point="realStart" />
+  <Poi Pos="153.553560" Type="automix" Point="realEnd" />
+  <Poi Pos="0.70" Type="automix" Point="fadeStart" />
+  <Poi Pos="151.60" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.713288" Type="automix" Point="cutStart" />
+  <Poi Pos="150.885442" Type="automix" Point="cutEnd" />
+  <Poi Pos="0.709546" Type="automix" Point="tempoStart" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Videos\Domani Munga - MUNGU 4 (Official Music Video)(1).mp4" FileSize="11517366" Flag="33554496">
+  <Tags Flag="2" />
+  <Infos SongLength="329.746576" LastModified="1787919433" FirstSeen="1781932089" FirstPlay="1781933538" LastPlay="1787919433" PlayCount="2" Bitrate="279" Cover="32" />
+  <Scan Version="801" Bpm="0.606054" Phase="19.466690" AltBpm="0.909093" Volume="1.708213" Key="G#" AudioSig="SHpYd1dmiFdIbmx3d0NqfU0K" Flag="32768" />
+  <Poi Pos="0.079819" Type="automix" Point="realStart" />
+  <Poi Pos="329.322812" Type="automix" Point="realEnd" />
+  <Poi Pos="0.20" Type="automix" Point="fadeStart" />
+  <Poi Pos="323.10" Type="automix" Point="fadeEnd" />
+  <Poi Pos="22.221497" Type="automix" Point="cutStart" />
+  <Poi Pos="317.979864" Type="automix" Point="cutEnd" />
+  <Poi Name="Break 1" Pos="153.180590" Type="remix" />
+  <Poi Name="End Break 1" Pos="174.614785" Type="remix" />
+  <Poi Name="Break 2" Pos="271.443447" Type="remix" />
+  <Poi Name="End Break 2" Pos="290.981587" Type="remix" />
+  <Poi Pos="9.797828" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Domani Munga - Mungu 4 (Official Music Video)(1)-1 vertical.mp4" FileSize="373049702" Flag="64">
+  <Tags Flag="1" />
+  <Infos SongLength="329.685333" LastModified="1781935012" FirstSeen="1781934814" FirstPlay="1781935012" LastPlay="1781935012" PlayCount="1" Bitrate="9049" Cover="34" />
+  <Scan Version="801" Bpm="0.606054" Phase="19.465284" AltBpm="0.909093" Volume="1.582628" Key="G#" AudioSig="SIpYd1dmiFdIbmx3d0NqfU0K" Flag="8421376" />
+  <Poi Pos="0.078667" Type="automix" Point="realStart" />
+  <Poi Pos="329.282667" Type="automix" Point="realEnd" />
+  <Poi Pos="0.20" Type="automix" Point="fadeStart" />
+  <Poi Pos="323.10" Type="automix" Point="fadeEnd" />
+  <Poi Pos="40.556553" Type="automix" Point="cutStart" />
+  <Poi Pos="317.978413" Type="automix" Point="cutEnd" />
+  <Poi Name="Break 1" Pos="153.116009" Type="remix" />
+  <Poi Name="End Break 1" Pos="174.617687" Type="remix" />
+  <Poi Name="Break 2" Pos="271.441270" Type="remix" />
+  <Poi Name="End Break 2" Pos="290.979410" Type="remix" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\outerdomani price.mp4" FileSize="63749685" Flag="64">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="348.0" LastModified="1781935733" FirstSeen="1781935316" Bitrate="1466" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-20</Comment>
+  <Poi Name="Domani Munga - Mungu 4 -1 vertical (1, Official Music Video)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\ssstik.io_@blatt.___1781936555218_1.mp3" FileSize="3132875">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="78.158367" LastModified="1781936963" FirstSeen="1781936961" Bitrate="320" Cover="34" />
+  <Scan Version="801" Bpm="0.480023" Phase="-0.985374" AltBpm="0.639977" Volume="0.177023" Key="Dm" AudioSig="Z5tHN0dIeVc3fYQ3FzSHqmEC" Flag="8421376" />
+  <Poi Pos="0.023220" Type="automix" Point="realStart" />
+  <Poi Pos="78.042268" Type="automix" Point="realEnd" />
+  <Poi Pos="0.60" Type="automix" Point="fadeStart" />
+  <Poi Pos="77.850" Type="automix" Point="fadeEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\barezi.mp3" FileSize="86837">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="2.0" LastModified="1782193728" FirstSeen="1782193728" Bitrate="347" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-23</Comment>
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\barezi (1).mp3" FileSize="1507898">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="37.0" LastModified="1782193779" FirstSeen="1782193779" Bitrate="326" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-23</Comment>
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\barezi (4).mp3" FileSize="81613">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="1.0" LastModified="1782193962" FirstSeen="1782193962" Bitrate="653" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-23</Comment>
+ </Song>                                                                               
+ <Song FilePath="C:\Users\odhis\Downloads\BOIBLACC - ROUTE 23 [Prod. Blacc&amp;Boodah].mp3" FileSize="2517863" Flag="33554448">
+  <Tags Remix="Prod. Blacc&amp;Boodah" Flag="1" />
+  <Infos SongLength="150.140227" LastModified="1787391696" FirstSeen="1782193178" FirstPlay="1782193408" LastPlay="1782193408" PlayCount="1" Bitrate="134" Cover="34" />
+  <Scan Version="801" Bpm="0.576916" Phase="21.305647" AltBpm="0.865351" Volume="0.985331" Key="A#m" AudioSig="aYxYV2dmaHhXmnmGRyC6kZME" Flag="8421376" />
+  <Poi Pos="0.137868" Type="automix" Point="realStart" />
+  <Poi Pos="148.241995" Type="automix" Point="realEnd" />
+  <Poi Pos="18.750" Type="automix" Point="fadeStart" />
+  <Poi Pos="147.70" Type="automix" Point="fadeEnd" />
+  <Poi Pos="18.564354" Type="automix" Point="cutStart" />
+  <Poi Pos="0.137868" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\BNXN-Sarz-Frank-Sinatra-Instrumental-Prod.-By-Sarz.mp3" FileSize="7154564">
+  <Tags Flag="1" />
+  <Infos SongLength="179.017143" LastModified="1782193618" FirstSeen="1782193172" FirstPlay="1782193618" LastPlay="1782193618" PlayCount="1" Bitrate="320" Cover="34" />
+  <Scan Version="801" Bpm="0.618571" Phase="40.055489" AltBpm="0.463923" Volume="0.776578" Key="Em" AudioSig="mNhYl4aJd4hnpHKHZ7h-WYMF" Flag="32768" />
+  <Poi Pos="0.226395" Type="automix" Point="realStart" />
+  <Poi Pos="178.204444" Type="automix" Point="realEnd" />
+  <Poi Pos="0.50" Type="automix" Point="fadeStart" />
+  <Poi Pos="175.0" Type="automix" Point="fadeEnd" />
+  <Poi Pos="40.065306" Type="automix" Point="cutStart" />
+  <Poi Pos="158.193197" Type="automix" Point="cutEnd" />
+  <Poi Pos="40.057347" Type="automix" Point="tempoStart" />
+  <Poi Pos="139.026531" Type="automix" Point="tempoEnd" />
+  <Poi Pos="0.474944" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\barezi (2).mp3" FileSize="6668649">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="166.0" LastModified="1782193946" FirstSeen="1782193946" Bitrate="321" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-23</Comment>
+  <Poi Name="BOIBLACC - ROUTE 23 (Prod. Blacc&amp;Boodah)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\barezi (3).mp3" FileSize="249841">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="6.0" LastModified="1782193958" FirstSeen="1782193958" Bitrate="333" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-23</Comment>
+  <Poi Name="BOIBLACC - ROUTE 23 (Prod. Blacc&amp;Boodah)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\barezi (5).mp3" FileSize="1726282">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="43.0" LastModified="1782194021" FirstSeen="1782194021" Bitrate="321" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-23</Comment>
+  <Poi Name="BOIBLACC - ROUTE 23 (Prod. Blacc&amp;Boodah)" Num="1" Type="cue" />
+  <Poi Name="BNXN - Sarz-Frank-Sinatra-Instrumental-Prod.-By-Sarz" Pos="40.0" Num="2" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\barezi (6).mp3" FileSize="31458">
+  <Tags Year="2026" Flag="1" />
+  <Infos LastModified="1782194645" FirstSeen="1782194022" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-23</Comment>
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\pool.mp4" FileSize="10448486" Flag="64">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="30.0" LastModified="1782299426" FirstSeen="1782296345" Bitrate="2786" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-06-24</Comment>
+  <Poi Name="Domani Munga Drops a Savage Line in Morio Anzenza 🔥 (1)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Under-The-Sea-(From-&apos;The-Little-Mermaid&apos;)-1.mid" FileSize="61865">
+  <Tags Remix="From-&apos;The-Little-Mermaid&apos;" Flag="2" />
+  <Infos LastModified="1789902788" FirstSeen="1789902787" Cover="16384" />
+ </Song>                                                                                          
+ <Song FilePath="C:\Users\odhis\Downloads\Kendrick-Lamar-The-Blacker-The-Berry-Instrumental-Prod.-By-Koz-Boi-1da.mp3" FileSize="9221524" Flag="268435456">
+  <Tags Author="Hipstrumentals" Genre="Instrumental" Album="Hipstrumentals.com" Flag="1" />
+  <Infos SongLength="222.066939" LastModified="1782194549" FirstSeen="1782194331" Bitrate="320" Cover="1" />
+  <Comment>Hipstrumentals.com</Comment>
+  <Scan Version="801" Bpm="0.681814" Phase="12.095012" AltBpm="0.511361" Volume="1.410427" Key="A#m" AudioSig="iYKoloZpl5lnYS-mp0CTQ9QG" Flag="32768" />
+  <Poi Pos="0.169796" Type="automix" Point="realStart" />
+  <Poi Pos="219.496780" Type="automix" Point="realEnd" />
+  <Poi Pos="11.750" Type="automix" Point="fadeStart" />
+  <Poi Pos="219.0" Type="automix" Point="fadeEnd" />
+  <Poi Pos="12.096871" Type="automix" Point="cutStart" />
+  <Poi Pos="218.861134" Type="automix" Point="cutEnd" />
+  <Poi Name="Break 1" Pos="98.861859" Type="remix" />
+  <Poi Name="End Break 1" Pos="121.188571" Type="remix" />
+  <Poi Name="Break 2" Pos="153.409887" Type="remix" />
+  <Poi Name="End Break 2" Pos="175.732245" Type="remix" />
+  <Poi Pos="0.184675" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\VOLATILE PRESENTS - @BABABOODAHOFFICIAL, @MICHAELPHAROE, @THESWAMIII, @GARVEY, @BOIBLACC, @HEIM.mp3" FileSize="3346547">
+  <Tags Flag="1" />
+  <Infos SongLength="308.686077" LastModified="1782194506" FirstSeen="1782194219" Bitrate="87" Cover="34" />
+  <Scan Version="801" Bpm="0.674150" Phase="-1.863243" AltBpm="0.505578" Volume="0.911935" Key="Bm" AudioSig="eZNYd5Z2eFhXd8mGh7TIl3cJ" Flag="8421376" />
+  <Poi Pos="0.130612" Type="automix" Point="realStart" />
+  <Poi Pos="302.820136" Type="automix" Point="realEnd" />
+  <Poi Pos="0.150" Type="automix" Point="fadeStart" />
+  <Poi Pos="302.150" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.153832" Type="automix" Point="cutStart" />
+  <Poi Pos="0.154749" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Videos\Tierra Whack - WAX PAPER (Official Music Video).mp4" FileSize="77558645" Flag="268435520">
+  <Tags Remix="Official Music Video" Flag="1" />
+  <Infos SongLength="169.366349" LastModified="1782295419" FirstSeen="1782295416" Bitrate="3659" Cover="16386" />
+  <Scan Version="801" Bpm="0.713878" Phase="-0.572630" AltBpm="0.535442" Volume="0.661078" Key="Dm" AudioSig="aNloZ4Z2iKhnq4inh3BhjisF" Flag="8421376" />
+  <Poi Pos="0.310567" Type="automix" Point="realStart" />
+  <Poi Pos="166.727982" Type="automix" Point="realEnd" />
+  <Poi Pos="1.10" Type="automix" Point="fadeStart" />
+  <Poi Pos="164.20" Type="automix" Point="fadeEnd" />
+  <Poi Pos="46.539320" Type="automix" Point="cutStart" />
+  <Poi Name="End Break 1" Pos="95.101678" Type="remix" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Under-The-Sea-(From-The-Little-Mermaid)-1.mp3" FileSize="3082701">
+  <Tags Remix="From-The-Little-Mermaid" Flag="1" />
+  <Infos SongLength="192.625442" LastModified="1789902870" FirstSeen="1789902867" Bitrate="128" Cover="2" />
+  <Scan Version="801" Bpm="0.600045" Phase="35.666733" AltBpm="0.906871" Volume="0.750825" Key="A#" AudioSig="ablIV0g6SEdHT1pHJ0SEhecF" Flag="8421376" />
+  <Poi Type="automix" Point="realStart" />
+  <Poi Pos="190.246893" Type="automix" Point="realEnd" />
+  <Poi Pos="3.70" Type="automix" Point="fadeStart" />
+  <Poi Pos="189.350" Type="automix" Point="fadeEnd" />
+ </Song>                                                                                                                        
+ <Song FilePath="C:\Users\odhis\Videos\Wakadinali -Morio Anzenza Ft Dyana Cods (Official Music Video)-1.mp4" FileSize="138382524" Flag="64">
+  <Tags Remix="Official Music Video" Flag="1" />
+  <Infos SongLength="268.863855" LastModified="1782296285" FirstSeen="1782296282" Bitrate="4110" Cover="34" />
+  <Scan Version="801" Bpm="0.461542" Phase="14.838435" AltBpm="0.692313" Volume="1.344482" Key="F#m" AudioSig="iTJHh8WIV4hYMLOGt78wclsI" Flag="32768" />
+  <Poi Pos="0.081270" Type="automix" Point="realStart" />
+  <Poi Pos="267.598367" Type="automix" Point="realEnd" />
+  <Poi Pos="14.350" Type="automix" Point="fadeStart" />
+  <Poi Pos="263.150" Type="automix" Point="fadeEnd" />
+  <Poi Pos="14.839002" Type="automix" Point="cutStart" />
+  <Poi Pos="259.916190" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Domani Munga Drops a Savage Line in Morio Anzenza 🔥 (1).mp4" FileSize="5231903" Flag="64">
+  <Tags Flag="1" />
+  <Infos SongLength="28.560469" LastModified="1782296340" FirstSeen="1782296272" FirstPlay="1782296340" LastPlay="1782296340" PlayCount="1" Bitrate="1462" Cover="34" />
+  <Scan Version="801" Bpm="0.441224" Phase="0.759932" AltBpm="0.661973" Volume="1.081941" Key="E" AudioSig="eO1YR9V3aCdmgohmlbou-9AA" Flag="32768" />
+  <Poi Pos="0.097234" Type="automix" Point="realStart" />
+  <Poi Pos="28.554739" Type="automix" Point="realEnd" />
+  <Poi Pos="0.30" Type="automix" Point="fadeStart" />
+  <Poi Pos="28.150" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.761905" Type="automix" Point="cutStart" />
+  <Poi Pos="27.674558" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Videos\King Von - Wayne&apos;s Story (Official Video).mp4" FileSize="20693301" Flag="301989952">
+  <Tags Remix="Official Video" Flag="2" />
+  <Infos SongLength="145.287256" LastModified="1788501717" FirstSeen="1784281551" FirstPlay="1784282091" LastPlay="1788501717" PlayCount="5" Bitrate="1139" Cover="16384" />
+  <Scan Version="801" Bpm="0.416667" Phase="6.799002" AltBpm="0.624989" Volume="0.930078" Key="Cm" AudioSig="SbpoV3dliWlXQVaGeIyEo04E" Flag="32768" />
+  <Poi Pos="0.137868" Type="automix" Point="realStart" />
+  <Poi Pos="139.261678" Type="automix" Point="realEnd" />
+  <Poi Pos="7.60" Type="automix" Point="fadeStart" />
+  <Poi Pos="133.70" Type="automix" Point="fadeEnd" />
+  <Poi Pos="13.468299" Type="automix" Point="cutStart" />
+  <Poi Pos="130.128980" Type="automix" Point="cutEnd" />
+  <Poi Name="Break 1" Pos="66.589751" Type="remix" />
+  <Poi Name="End Break 1" Pos="80.134966" Type="remix" />
+  <Poi Name="Break 2" Pos="105.552834" Type="remix" />
+  <Poi Name="End Break 2" Pos="120.132789" Type="remix" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Videos\PFG Ft. J. Cole — Whole House.mp4" FileSize="20703772" Flag="301989952">
+  <Tags Flag="2" />
+  <Infos SongLength="270.071293" LastModified="1788501715" FirstSeen="1784281424" FirstPlay="1784281635" LastPlay="1788501715" PlayCount="6" Bitrate="613" Cover="32" />
+  <Scan Version="801" Bpm="0.413787" Phase="3.384558" AltBpm="0.620680" Volume="0.935552" Key="G" AudioSig="iaM4Z1dpV4g3x01XV8of00wI" Flag="32768" />
+  <Poi Pos="0.065306" Type="automix" Point="realStart" />
+  <Poi Pos="265.71610" Type="automix" Point="realEnd" />
+  <Poi Pos="0.065306" Type="automix" Point="fadeStart" />
+  <Poi Pos="264.950" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.068934" Type="automix" Point="cutStart" />
+  <Poi Pos="263.653878" Type="automix" Point="cutEnd" />
+  <Poi Name="Break 1" Pos="223.109660" Type="remix" />
+  <Poi Name="End Break 1" Pos="238.413787" Type="remix" />
+  <Poi Pos="13.309201" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\nangangagagaga.mp3" FileSize="182968">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="4.0" LastModified="1792471113" FirstSeen="1792471113" Bitrate="366" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-10-20</Comment>
+  <Poi Name="Collie Buddz - Come Around Instrumental (via DW YouTube Downloader)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\nangangagagaga (5).mp3" FileSize="5927817">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="148.0" LastModified="1792476235" FirstSeen="1792476231" Bitrate="320" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-10-20</Comment>
+  <Poi Name="nangangagagaga (4)" Num="1" Type="cue" />
+ </Song>                  
+ <Song FilePath="C:\Users\odhis\Downloads\Baby-Keem-CaSIno-Instrumental-Prod.-By-Baby-Keem-Cardo-Got-Wings-Deats-Jake-Oh-Scott-Bridgeway-Teo-Halm.mp3" FileSize="10441952">
+  <Tags Flag="1" />
+  <Infos SongLength="261.0480" LastModified="1785299468" FirstSeen="1785299448" Bitrate="320" Cover="34" />
+  <Scan Version="801" Bpm="0.410952" Phase="74.572922" AltBpm="0.616440" Volume="0.844109" Key="Gm" AudioSig="eZJppndsh8lG9W2Gh4AqH-kH" Flag="32768" />
+  <Poi Pos="0.402667" Type="automix" Point="realStart" />
+  <Poi Pos="253.746667" Type="automix" Point="realEnd" />
+  <Poi Pos="0.650" Type="automix" Point="fadeStart" />
+  <Poi Pos="253.550" Type="automix" Point="fadeEnd" />
+  <Poi Pos="19.651338" Type="automix" Point="cutStart" />
+  <Poi Pos="251.904580" Type="automix" Point="cutEnd" />
+  <Poi Pos="236.080181" Type="automix" Point="tempoEnd" />
+  <Poi Pos="4.704814" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Mauru Gwash x JayLo - SUV (Official Video).mp3" FileSize="2739959" Flag="33554432">
+  <Tags Remix="Official Video" Flag="1" />
+  <Infos SongLength="186.456236" LastModified="1787391420" FirstSeen="1785299428" FirstPlay="1785299567" LastPlay="1787391420" PlayCount="3" Bitrate="118" Cover="34" />
+  <Scan Version="801" Bpm="0.410964" Phase="13.226576" AltBpm="0.616440" Volume="1.113778" Key="D" AudioSig="aNOYRoWKR3c32qqHtnGETsIF" Flag="32768" />
+  <Poi Pos="0.078367" Type="automix" Point="realStart" />
+  <Poi Pos="185.293787" Type="automix" Point="realEnd" />
+  <Poi Pos="0.50" Type="automix" Point="fadeStart" />
+  <Poi Pos="183.550" Type="automix" Point="fadeEnd" />
+  <Poi Pos="13.227392" Type="automix" Point="cutStart" />
+  <Poi Pos="183.576236" Type="automix" Point="cutEnd" />
+  <Poi Name="Break 1" Pos="52.070748" Type="remix" />
+  <Poi Name="End Break 1" Pos="65.836553" Type="remix" />
+  <Poi Name="Break 2" Pos="130.974331" Type="remix" />
+  <Poi Name="End Break 2" Pos="144.740136" Type="remix" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Wakadinali -Rong Reggae(Official Music Video) ft Mc GiJo, RiDiQ &amp; Skillo.mp3" FileSize="5430381" Flag="33554432">
+  <Tags Remix="Official Music Video" Flag="1" />
+  <Infos SongLength="339.348042" LastModified="1785557968" FirstSeen="1785556975" FirstPlay="1785557438" LastPlay="1785557438" PlayCount="1" Bitrate="128" Cover="34" />
+  <Scan Version="801" Bpm="0.60" Phase="10.107438" AltBpm="0.450" Volume="1.305478" Key="G#m" AudioSig="eWpIh3dlWGg41Z2WZ6HMq4QK" Flag="32768" />
+  <Poi Pos="0.114667" Type="automix" Point="realStart" />
+  <Poi Pos="336.2840" Type="automix" Point="realEnd" />
+  <Poi Pos="10.10" Type="automix" Point="fadeStart" />
+  <Poi Pos="322.750" Type="automix" Point="fadeEnd" />
+  <Poi Pos="10.110113" Type="automix" Point="cutStart" />
+  <Poi Pos="297.208163" Type="automix" Point="cutEnd" />
+  <Poi Pos="10.100987" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Without Money.mp3" FileSize="5754181" Flag="301989888">
+  <Tags Flag="1" />
+  <Infos SongLength="239.686531" LastModified="1787919423" FirstSeen="1785556931" FirstPlay="1785557065" LastPlay="1787919423" PlayCount="3" Bitrate="192" Cover="16386" />
+  <Scan Version="801" Bpm="0.612245" Phase="19.598005" AltBpm="0.459184" Volume="1.930610" Key="Gm" AudioSig="aHZYaIdGWGg3jZWHSIuTlmgH" Flag="32768" />
+  <Poi Pos="0.014512" Type="automix" Point="realStart" />
+  <Poi Pos="238.669206" Type="automix" Point="realEnd" />
+  <Poi Pos="7.350" Type="automix" Point="fadeStart" />
+  <Poi Pos="235.10" Type="automix" Point="fadeEnd" />
+  <Poi Pos="19.597642" Type="automix" Point="cutStart" />
+  <Poi Pos="214.612608" Type="automix" Point="cutEnd" />
+  <Poi Pos="19.589833" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\J. Cole - Can&apos;t Get Enough (Instrumental).mp3" FileSize="5425389">
+  <Tags Remix="Instrumental" Flag="1" />
+  <Infos SongLength="226.005333" LastModified="1785558708" FirstSeen="1780824365" FirstPlay="1780824448" LastPlay="1785558708" PlayCount="2" Bitrate="192" Cover="16386" />
+  <Scan Version="801" Bpm="0.454546" Phase="2.039342" AltBpm="0.681814" Volume="0.710211" Key="Dm" AudioSig="VxBHaFZ5WCc3ppxJSNpZb_sG" Flag="8421376" />
+  <Poi Pos="0.214667" Type="automix" Point="realStart" />
+  <Poi Pos="224.657333" Type="automix" Point="realEnd" />
+  <Poi Pos="0.214667" Type="automix" Point="fadeStart" />
+  <Poi Pos="218.450" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.221315" Type="automix" Point="cutStart" />
+  <Poi Pos="216.811973" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="netsearch://va645331" Flag="2304">
+  <Tags Author="Mike Clark Jr. feat. Zeddy Will" Title="Cups In The Air" Genre="Dance" Remix="Remix (DJ Kontrol &amp; Splyce Club Mix) [Remix]" Year="2026" Bpm="0.461538" Key="Em" Flag="9" />
+  <Infos SongLength="210.0" LastModified="1789821768" FirstSeen="1789821752" Bitrate="320" Cover="16386" />
+  <Scan Version="801" Bpm="0.461553" Phase="0.024082" AltBpm="0.346111" Volume="1.351753" Key="E" AudioSig="qjuYtKRkmHuXtqSUtTKnNd0A" Flag="32768" />
+  <Poi Pos="0.018866" Type="automix" Point="realStart" />
+  <Poi Pos="30.008889" Type="automix" Point="realEnd" />
+  <Poi Pos="0.018866" Type="automix" Point="fadeStart" />
+  <Poi Pos="29.950" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.485442" Type="automix" Point="cutStart" />
+  <Link NetSearch="va645331" />
+ </Song>                              
+ <Song FilePath="C:\Users\odhis\Downloads\noname.mp3" FileSize="2508851">
+  <Tags Flag="1" />
+  <Infos SongLength="150.000907" LastModified="1787917868" FirstSeen="1787917762" FirstPlay="1787917868" LastPlay="1787917868" PlayCount="1" Bitrate="134" Cover="16386" />
+  <Scan Version="801" Bpm="0.512812" Phase="16.475691" AltBpm="0.769229" Volume="0.867961" Key="C#" AudioSig="WEh3R7Z3iGhHay6XhnZoV5ME" Flag="32768" />
+  <Poi Pos="0.068209" Type="automix" Point="realStart" />
+  <Poi Pos="147.735510" Type="automix" Point="realEnd" />
+  <Poi Pos="16.450" Type="automix" Point="fadeStart" />
+  <Poi Pos="147.735510" Type="automix" Point="fadeEnd" />
+  <Poi Pos="16.470930" Type="automix" Point="cutStart" />
+  <Poi Pos="129.805351" Type="automix" Point="cutEnd" />
+  <Poi Name="Break 1" Pos="47.754014" Type="remix" />
+  <Poi Name="End Break 1" Pos="65.704490" Type="remix" />
+ </Song>                                                                         
+ <Song FilePath="C:\Users\odhis\Downloads\Can&apos;t Get Enough (J Cole &amp; Trey Songz Instrumental Cover) (1).mp3" FileSize="4143952" Flag="268435456">
+  <Tags Flag="1" />
+  <Infos SongLength="242.857506" LastModified="1790348857" FirstSeen="1785571096" FirstPlay="1785571342" LastPlay="1790348857" PlayCount="5" Bitrate="136" Cover="16386" />
+  <Scan Version="801" Bpm="0.454546" Phase="2.618186" AltBpm="0.681814" Volume="0.748774" Key="Dm" AudioSig="RwBHZzZ6aRY3qJw5OOlZP2UH" Flag="8421376" />
+  <Poi Pos="0.793832" Type="automix" Point="realStart" />
+  <Poi Pos="238.033560" Type="automix" Point="realEnd" />
+  <Poi Pos="0.80" Type="automix" Point="fadeStart" />
+  <Poi Pos="235.40" Type="automix" Point="fadeEnd" />
+  <Poi Pos="2.845170" Type="automix" Point="cutStart" />
+  <Poi Pos="231.937596" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Khaligraph Jones - Wanjiru &amp; Akinyi (SPOTISAVER).mp3" FileSize="11992595" Flag="33554432">
+  <Tags Author="Khaligraph Jones" Title="Wanjiru &amp; Akinyi" Album="Wanjiru &amp; Akinyi" Remix="SPOTISAVER" TrackNumber="1" Year="2016" Flag="1" />
+  <Infos SongLength="287.857778" LastModified="1790348502" FirstSeen="1785558974" FirstPlay="1785571327" LastPlay="1790348502" PlayCount="3" Bitrate="320" Cover="1" />
+  <Scan Version="801" Bpm="0.483866" Phase="16.355692" AltBpm="0.725805" Volume="1.10570" Key="A#m" AudioSig="WNZ4Z2d2aIlXtauWd2DojNkI" Flag="8421376" />
+  <Poi Pos="0.870748" Type="automix" Point="realStart" />
+  <Poi Pos="285.022041" Type="automix" Point="realEnd" />
+  <Poi Pos="2.40" Type="automix" Point="fadeStart" />
+  <Poi Pos="280.550" Type="automix" Point="fadeEnd" />
+  <Poi Pos="16.357732" Type="automix" Point="cutStart" />
+  <Poi Pos="279.345488" Type="automix" Point="cutEnd" />
+  <Poi Pos="16.371260" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\Rae-Sremmurd-Swang-Instrumental.mp3" FileSize="7114892">
+  <Tags Flag="1" />
+  <Infos SongLength="178.024490" LastModified="1785745481" FirstSeen="1785745406" FirstPlay="1785745481" LastPlay="1785745481" PlayCount="1" Bitrate="320" Cover="16386" />
+  <Scan Version="801" Bpm="0.428571" Phase="13.411157" AltBpm="0.642857" Volume="0.750471" Key="C#m" AudioSig="OHpIh0d5iShHU2VXRi2BPXsF" Flag="32768" />
+  <Poi Pos="0.193016" Type="automix" Point="realStart" />
+  <Poi Pos="177.313379" Type="automix" Point="realEnd" />
+  <Poi Pos="1.30" Type="automix" Point="fadeStart" />
+  <Poi Pos="164.250" Type="automix" Point="fadeEnd" />
+  <Poi Pos="14.698957" Type="automix" Point="cutStart" />
+  <Poi Pos="162.983764" Type="automix" Point="cutEnd" />
+  <Poi Name="Break 1" Pos="39.555193" Type="remix" />
+  <Poi Name="End Break 1" Pos="54.556735" Type="remix" />
+  <Poi Name="Break 2" Pos="80.698050" Type="remix" />
+  <Poi Name="End Break 2" Pos="95.694512" Type="remix" />
+  <Poi Name="Break 3" Pos="108.126621" Type="remix" />
+  <Poi Name="End Break 3" Pos="125.694694" Type="remix" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\noname (1).mp3" FileSize="2893285" Flag="33554432">
+  <Tags Flag="1" />
+  <Infos SongLength="192.168345" LastModified="1787918044" FirstSeen="1787917746" FirstPlay="1787917872" LastPlay="1787917872" PlayCount="1" Bitrate="120" Cover="16386" />
+  <Scan Version="801" Bpm="0.50" Phase="-0.510998" AltBpm="0.740748" Volume="1.285272" Key="G" AudioSig="mnJ4aMWHmXhYIUu2Z6XDkekF" Flag="32768" />
+  <Poi Pos="0.005805" Type="automix" Point="realStart" />
+  <Poi Pos="189.991474" Type="automix" Point="realEnd" />
+  <Poi Pos="0.20" Type="automix" Point="fadeStart" />
+  <Poi Pos="189.991474" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.234376" Type="automix" Point="cutStart" />
+  <Poi Pos="151.240998" Type="automix" Point="cutEnd" />
+  <Poi Pos="15.988767" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Downloads\KHALIGRAPH JONES - WANJIRU &amp; AKINYI (OFFICIAL VIDEO).mp3" FileSize="4669904" Flag="33554432">
+  <Tags Remix="OFFICIAL VIDEO" Flag="1" />
+  <Infos SongLength="294.405805" LastModified="1788501903" FirstSeen="1785558117" FirstPlay="1785558689" LastPlay="1788501903" PlayCount="3" Bitrate="127" Cover="16386" />
+  <Scan Version="801" Bpm="0.483866" Phase="5.192245" AltBpm="0.725805" Volume="1.130822" Key="A#m" AudioSig="WcZ4aGd3aIlXtauWd2DXfPwI" Flag="8421376" />
+  <Poi Pos="0.847528" Type="automix" Point="realStart" />
+  <Poi Pos="289.338050" Type="automix" Point="realEnd" />
+  <Poi Pos="6.70" Type="automix" Point="fadeStart" />
+  <Poi Pos="284.90" Type="automix" Point="fadeEnd" />
+  <Poi Pos="23.333878" Type="automix" Point="cutStart" />
+  <Poi Pos="283.665850" Type="automix" Point="cutEnd" />
+  <Poi Pos="5.182438" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="netsearch://va644872" Flag="2304">
+  <Tags Author="Jay Leyzo, Pogoda &amp; Kris Kiss" Title="Sunset To Sunrise" Genre="Dance" Remix="Original Club Mix [Club]" Year="2026" Bpm="0.468750" Key="Ebm" Flag="9" />
+  <Infos SongLength="184.0" LastModified="1789821805" FirstSeen="1789821752" Bitrate="320" Cover="16386" />
+  <Scan Version="801" Bpm="0.468764" Phase="0.490" AltBpm="0.703107" Volume="1.094224" Key="C#m" AudioSig="uf6ptqbgudnXxfLW9-nzH90A" Flag="32768" />
+  <Poi Pos="0.017415" Type="automix" Point="realStart" />
+  <Poi Pos="30.008889" Type="automix" Point="realEnd" />
+  <Poi Pos="0.017415" Type="automix" Point="fadeStart" />
+  <Poi Pos="29.950" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.491973" Type="automix" Point="cutStart" />
+  <Poi Pos="0.488776" Type="automix" Point="tempoStart" />
+  <Link NetSearch="va644872" />
+ </Song>
+ <Song FilePath="netsearch://bp22357262" Flag="256">
+  <Tags Author="HUGEL, SOLTO (FR)" Title="Jamaican (Bam Bam)" Genre="Afro House" Album="Jamaican (Bam Bam)" Label="MoBlack Records" Remix="Extended Mix" Year="2025" Bpm="0.491803" Key="A" Flag="1" />
+  <Infos SongLength="300.6560" LastModified="1789821932" FirstSeen="1789821921" Bitrate="96" Cover="16384" />
+  <Scan Version="801" Bpm="0.491803" Phase="-0.213651" AltBpm="0.368855" Volume="1.395792" Key="G#m" AudioSig="msaIp4epablnYIKHp7UPxbQD" Flag="32768" />
+  <Poi Type="automix" Point="realStart" />
+  <Poi Pos="119.993469" Type="automix" Point="realEnd" />
+  <Poi Type="automix" Point="fadeStart" />
+  <Poi Pos="119.850" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.768435" Type="automix" Point="cutStart" />
+  <Poi Name="Break 1" Pos="20.691156" Type="remix" />
+  <Poi Name="End Break 1" Pos="100.353016" Type="remix" />
+  <Link NetSearch="bp22357262" />
+ </Song>                                                                
+ <Song FilePath="netsearch://bp30298925" Flag="256">
+  <Tags Author="Zero (UK)" Title="SHOOTA" Genre="140 / Deep Dubstep / Grime" Album="SHOOTA" Label="Deadbeats" Remix="Original Mix" Year="2026" Bpm="0.428571" Key="G" Flag="1" />
+  <Infos SongLength="194.8920" LastModified="1789821898" FirstSeen="1789821847" Bitrate="96" Cover="16384" />
+  <Scan Version="801" Bpm="0.428571" Phase="0.366349" AltBpm="0.642857" Volume="1.388844" Key="Dm" AudioSig="SGJ4tnepSJdmlrumd8wZPMEC" Flag="32768" />
+  <Poi Type="automix" Point="realStart" />
+  <Poi Pos="89.993288" Type="automix" Point="realEnd" />
+  <Poi Type="automix" Point="fadeStart" />
+  <Poi Pos="89.850" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.366440" Type="automix" Point="cutStart" />
+  <Poi Name="Break 1" Pos="16.652336" Type="remix" />
+  <Poi Name="End Break 1" Pos="46.643810" Type="remix" />
+  <Link NetSearch="bp30298925" />
+ </Song>
+ <Song FilePath="netsearch://bp20636041" Flag="256">
+  <Tags Author="Skepta, Fred again.., PlaqueBoyMax" Title="Victory Lap" Genre="140 / Deep Dubstep / Grime" Album="Victory Lap" Label="Atlantic Records UK" Remix="Original Mix" Year="2025" Bpm="0.428571" Key="Eb" Flag="1" />
+  <Infos SongLength="165.8570" LastModified="1789821907" FirstSeen="1789821847" FirstPlay="1789821907" LastPlay="1789821907" PlayCount="1" Bitrate="96" Cover="16384" />
+  <Comment>Explicit</Comment>
+  <Scan Version="801" Bpm="0.428571" Phase="0.715873" AltBpm="0.642857" Volume="1.686494" Key="Ebm" AudioSig="Wdtoh1eGWJhYtLl3h5FKP7QD" Flag="32768" />
+  <Poi Type="automix" Point="realStart" />
+  <Poi Pos="119.993469" Type="automix" Point="realEnd" />
+  <Poi Pos="0.70" Type="automix" Point="fadeStart" />
+  <Poi Pos="119.950" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.714014" Type="automix" Point="cutStart" />
+  <Poi Name="Break 1" Pos="52.148390" Type="remix" />
+  <Poi Name="End Break 1" Pos="69.285442" Type="remix" />
+  <Link NetSearch="bp20636041" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Music\Busta Rhymes - Put Your Hands Where My Eyes Could See (Instrumental).mp3" FileSize="3999717" Flag="268435456">
+  <Tags Title="Busta Rhymes - Put Your Hands Where My Eyes Could See (Instrumental)" Remix="Instrumental" Flag="1" />
+  <Infos SongLength="199.272979" LastModified="1790348180" FirstSeen="1790348110" FirstPlay="1790348180" LastPlay="1790348180" PlayCount="1" Bitrate="160" Cover="1" />
+  <Scan Version="801" Bpm="0.603243" Phase="0.437687" AltBpm="0.904853" Volume="0.623374" Key="A#" AudioSig="uY64xnajljhVxOj1pwD60PgF" Flag="32768" />
+  <Poi Pos="0.434667" Type="automix" Point="realStart" />
+  <Poi Pos="192.886667" Type="automix" Point="realEnd" />
+  <Poi Pos="0.450" Type="automix" Point="fadeStart" />
+  <Poi Pos="186.850" Type="automix" Point="fadeEnd" />
+ </Song>                                                                                                                                          
+ <Song FilePath="netsearch://bp28886180" Flag="256">
+  <Tags Author="Lizwi, Aaron Sevilla, Brøder, SENATVS" Title="Pump up the Jam" Genre="Afro House" Album="Pump up the Jam" Label="AFRODISE" Remix="Original Mix" Year="2026" Bpm="0.480" Key="C" Flag="1" />
+  <Infos SongLength="286.080" LastModified="1789821981" FirstSeen="1789821921" Bitrate="96" Cover="16384" />
+  <Scan Version="801" Bpm="0.480" Phase="-0.720023" AltBpm="0.360" Volume="1.662878" Key="Am" AudioSig="qpKYtraiiLmXdMW1l7jR4rQD" Flag="32768" />
+  <Poi Type="automix" Point="realStart" />
+  <Poi Pos="119.993469" Type="automix" Point="realEnd" />
+  <Poi Type="automix" Point="fadeStart" />
+  <Poi Pos="119.750" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.240181" Type="automix" Point="cutStart" />
+  <Poi Pos="63.120091" Type="automix" Point="tempoStart" />
+  <Poi Name="End Break 1" Pos="62.633651" Type="remix" />
+  <Link NetSearch="bp28886180" />
+ </Song>
+ <Song FilePath="netsearch://bp30504146" Flag="256">
+  <Tags Author="Voltage" Title="Godzilla" Genre="Drum &amp; Bass" Album="Godzilla" Label="Digital Soundboy" Remix="Original Mix" Year="2026" Bpm="0.576923" Key="D" Flag="1" />
+  <Infos SongLength="223.9120" LastModified="1789822030" FirstSeen="1789822015" Bitrate="96" Cover="16384" />
+  <Scan Version="801" Bpm="0.342857" Phase="0.500544" AltBpm="0.514286" Volume="4.134572" Key="D" AudioSig="u_Ooxta8aLtXteumxqNDHrQD" Flag="32768" />
+  <Poi Type="automix" Point="realStart" />
+  <Poi Pos="119.993469" Type="automix" Point="realEnd" />
+  <Poi Pos="0.50" Type="automix" Point="fadeStart" />
+  <Poi Pos="119.850" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.498503" Type="automix" Point="cutStart" />
+  <Link NetSearch="bp30504146" />
+ </Song>
+ <Song FilePath="netsearch://bp30236029" Flag="256">
+  <Tags Author="Shadu" Title="Loca " Genre="Afro House" Album="Loca" Label="On The House" Remix="Extended Mix" Year="2026" Bpm="0.487805" Key="G" Flag="1" />
+  <Infos SongLength="306.3410" LastModified="1789822082" FirstSeen="1789821921" FirstPlay="1789822082" LastPlay="1789822082" PlayCount="1" Bitrate="96" Cover="16384" />
+  <Scan Version="801" Bpm="0.487812" Phase="0.538073" AltBpm="0.365862" Volume="1.099050" Key="Gm" AudioSig="2mTJtuSAeLjW947lluAxMrQD" Flag="32768" />
+  <Poi Type="automix" Point="realStart" />
+  <Poi Pos="119.993469" Type="automix" Point="realEnd" />
+  <Poi Pos="0.050" Type="automix" Point="fadeStart" />
+  <Poi Pos="119.950" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.538413" Type="automix" Point="cutStart" />
+  <Poi Pos="22.488186" Type="automix" Point="tempoStart" />
+  <Poi Name="Break 1" Pos="5.410249" Type="remix" />
+  <Poi Name="End Break 1" Pos="22.009615" Type="remix" />
+  <Link NetSearch="bp30236029" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Music\Wakuu Music - “WAKUU CYPHER 2” (Official Music Video).mp3" FileSize="5530475" Flag="33554432">
+  <Tags Title="Wakuu Music - “WAKUU CYPHER 2” (Official Music Video)" Remix="Official Music Video" Flag="1" />
+  <Infos SongLength="274.920979" LastModified="1792470196" FirstSeen="1790321830" FirstPlay="1790321896" LastPlay="1790348183" PlayCount="2" Bitrate="160" Cover="33" />
+  <Scan Version="801" Bpm="0.545465" Phase="17.994104" AltBpm="0.818186" Volume="1.245374" Key="D" AudioSig="y9loh7aXWKhX0-WHp9KDL5QI" Flag="32768" />
+  <Poi Pos="0.018667" Type="automix" Point="realStart" />
+  <Poi Pos="274.9040" Type="automix" Point="realEnd" />
+  <Poi Pos="1.50" Type="automix" Point="fadeStart" />
+  <Poi Pos="274.20" Type="automix" Point="fadeEnd" />
+  <Poi Pos="17.996916" Type="automix" Point="cutStart" />
+  <Poi Pos="273.816236" Type="automix" Point="cutEnd" />
+  <Poi Name="Break 1" Pos="221.450884" Type="remix" />
+  <Poi Name="End Break 1" Pos="239.997098" Type="remix" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\nangangagagaga (1).mp3" FileSize="5831686">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="145.0" LastModified="1792471264" FirstSeen="1792471264" Bitrate="322" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-10-20</Comment>
+  <Poi Name=" feat. Toxic Lyrikali (Official Music Video) - Zzero Sufuri Otero (via DW YouTube Downloader)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\nangangagagaga (2).mp3" FileSize="133858">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="3.0" LastModified="1792471381" FirstSeen="1792471381" Bitrate="357" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-10-20</Comment>
+  <Poi Name=" feat. Toxic Lyrikali (Official Music Video) - Zzero Sufuri Otero (via DW YouTube Downloader)" Num="1" Type="cue" />
+ </Song>                                                           
+ <Song FilePath="C:\Users\odhis\Videos\Collie Buddz- Come Around Instrumental (via DW YouTube Downloader).mkv" FileSize="7843428" Flag="268435520">
+  <Tags Remix="via DW YouTube Downloader" Flag="1" />
+  <Infos SongLength="228.252154" LastModified="1792470472" FirstSeen="1792470245" FirstPlay="1792470472" LastPlay="1792470472" PlayCount="1" Bitrate="275" Cover="1" />
+  <Scan Version="801" Bpm="0.390385" Phase="17.035238" AltBpm="0.585601" Volume="1.231759" Key="B" AudioSig="mSA4iFfJV2dXqdxYlu_onLoG" Flag="8421376" />
+  <Poi Pos="0.831565" Type="automix" Point="realStart" />
+  <Poi Pos="220.281905" Type="automix" Point="realEnd" />
+  <Poi Pos="3.350" Type="automix" Point="fadeStart" />
+  <Poi Pos="210.50" Type="automix" Point="fadeEnd" />
+  <Poi Pos="13.915283" Type="automix" Point="cutStart" />
+  <Poi Pos="206.577778" Type="automix" Point="cutEnd" />
+  <Poi Name="Break 1" Pos="137.276372" Type="remix" />
+  <Poi Name="End Break 1" Pos="151.915102" Type="remix" />
+  <Poi Pos="13.919975" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\nangangagagaga (6).mp3" FileSize="1809874">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="45.0" LastModified="1792476489" FirstSeen="1792476489" Bitrate="322" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-10-20</Comment>
+  <Poi Name="nangangagagaga (4)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\drake toxic.mp3" FileSize="825580">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="20.0" LastModified="1792484752" FirstSeen="1792484752" Bitrate="330" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-10-20</Comment>
+  <Poi Name="Drake - 0-to-100-Instrumental-Prod.-By-Vinylz-Boi-1da" Num="1" Type="cue" />
+  <Poi Name="Toxic Lyrikali - Hate (Official Video) (via DW YouTube Downloader)" Pos="17.0" Num="2" Type="cue" />
+ </Song>                                                                                                                
+ <Song FilePath="C:\Users\odhis\Desktop\nangangagagaga (3).mp3" FileSize="5498364">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="137.0" LastModified="1792471526" FirstSeen="1792471526" Bitrate="321" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-10-20</Comment>
+  <Poi Name=" feat. Toxic Lyrikali (Official Music Video) - Zzero Sufuri Otero (via DW YouTube Downloader)" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Videos\Zzero Sufuri Otero Ft Toxic Lyrikali (Official Music Video) (via DW YouTube Downloader).mkv" FileSize="124523894" Flag="301989952">
+  <Tags Remix="via DW YouTube Downloader" Flag="1" />
+  <Infos SongLength="231.340408" LastModified="1792471551" FirstSeen="1792470331" FirstPlay="1792470459" LastPlay="1792470459" PlayCount="1" Bitrate="4306" Cover="1" />
+  <Scan Version="801" Bpm="0.401950" Phase="0.036689" AltBpm="0.602902" Volume="1.311355" Key="Ebm" AudioSig="OchYZ3Z3WGhXgqd3Z7ikbQkH" Flag="32768" />
+  <Poi Pos="0.065306" Type="automix" Point="realStart" />
+  <Poi Pos="225.758912" Type="automix" Point="realEnd" />
+  <Poi Pos="0.450" Type="automix" Point="fadeStart" />
+  <Poi Pos="218.450" Type="automix" Point="fadeEnd" />
+  <Poi Pos="1.268390" Type="automix" Point="cutStart" />
+  <Poi Pos="218.076009" Type="automix" Point="cutEnd" />
+  <Poi Pos="12.910092" Num="1" Type="cue" />
+  <Poi Pos="90.064801" Num="2" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\.gemini\antigravity\scratch\virtualdj-bpm-match\retimed_footage_result.mp4" FileSize="126735658" Flag="64">
+  <Tags Flag="2" />
+  <Infos SongLength="221.518367" LastModified="1792475992" FirstSeen="1792474521" Bitrate="4481" Cover="32" />
+  <Scan Version="801" Bpm="0.392857" Phase="0.042494" AltBpm="0.589297" Volume="1.185723" Key="B" AudioSig="SbdIZ3d2WHhXkbeGd7iXbeAG" Flag="32768" />
+  <Poi Pos="0.055147" Type="automix" Point="realStart" />
+  <Poi Pos="220.663583" Type="automix" Point="realEnd" />
+  <Poi Pos="0.450" Type="automix" Point="fadeStart" />
+  <Poi Pos="213.550" Type="automix" Point="fadeEnd" />
+  <Poi Pos="0.454240" Type="automix" Point="cutStart" />
+  <Poi Pos="214.330340" Type="automix" Point="cutEnd" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\nangangagagaga (4).mp3" FileSize="5892290">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="147.230" LastModified="1792476541" FirstSeen="1792471708" FirstPlay="1792476072" LastPlay="1792476541" PlayCount="2" Bitrate="321" Cover="34" />
+  <Comment>Recorded using VirtualDJ on 2026-10-20</Comment>
+  <Scan Version="801" Bpm="0.390385" Phase="12.446054" AltBpm="0.585578" Volume="1.059735" Key="B" AudioSig="mUE4d2eoV1hHuMtoh93HrJAE" Flag="32768" />
+  <Poi Type="automix" Point="realStart" />
+  <Poi Pos="147.223220" Type="automix" Point="realEnd" />
+  <Poi Pos="4.650" Type="automix" Point="fadeStart" />
+  <Poi Pos="142.20" Type="automix" Point="fadeEnd" />
+  <Poi Pos="12.449524" Type="automix" Point="cutStart" />
+  <Poi Pos="132.687528" Type="automix" Point="cutEnd" />
+  <Poi Name=" feat. Toxic Lyrikali (Official Music Video) - Zzero Sufuri Otero (via DW YouTube Downloader)" Num="1" Type="cue" />
+  <Poi Name="Collie Buddz - Come Around Instrumental (via DW YouTube Downloader)" Pos="139.0" Num="2" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\nangangagagaga (7).mp3" FileSize="6100225">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="152.430" LastModified="1792483939" FirstSeen="1792476649" Bitrate="321" Cover="34" />
+  <Comment>Recorded using VirtualDJ on 2026-10-20</Comment>
+  <Scan Version="801" Bpm="0.401950" Phase="12.815284" AltBpm="0.602925" Volume="1.056496" Key="F#m" AudioSig="mVE4h2enWGdHuMtnd93HrLME" Flag="32768" />
+  <Poi Pos="0.001451" Type="automix" Point="realStart" />
+  <Poi Pos="151.592925" Type="automix" Point="realEnd" />
+  <Poi Pos="9.60" Type="automix" Point="fadeStart" />
+  <Poi Pos="142.70" Type="automix" Point="fadeEnd" />
+  <Poi Pos="12.818866" Type="automix" Point="cutStart" />
+  <Poi Pos="136.618957" Type="automix" Point="cutEnd" />
+  <Poi Name="nangangagagaga (4)" Num="1" Type="cue" />
+ </Song>                            
+ <Song FilePath="C:\Users\odhis\Videos\Masego &amp; Buju Banton - Hello [Instrumental] (via DW YouTube Downloader).mkv" FileSize="23227757" Flag="268435520">
+  <Tags Remix="Instrumental" Flag="1" />
+  <Infos SongLength="178.538231" LastModified="1792484009" FirstSeen="1792476784" FirstPlay="1792476852" LastPlay="1792484009" PlayCount="2" Bitrate="1041" Cover="1" />
+  <Scan Version="801" Bpm="0.681814" Phase="9.357529" AltBpm="0.511361" Volume="1.139346" Key="G" AudioSig="mkF3toZlV1iG3ox3R8cgiF0F" Flag="32768" />
+  <Poi Pos="0.471655" Type="automix" Point="realStart" />
+  <Poi Pos="173.328254" Type="automix" Point="realEnd" />
+  <Poi Pos="9.350" Type="automix" Point="fadeStart" />
+  <Poi Pos="172.30" Type="automix" Point="fadeEnd" />
+  <Poi Pos="9.870658" Type="automix" Point="cutStart" />
+  <Poi Pos="160.719819" Type="automix" Point="cutEnd" />
+  <Poi Pos="9.344894" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Videos\Foxy Brown, Spragga Benz - Oh Yeah (via DW YouTube Downloader).mkv" FileSize="159122234" Flag="301989952">
+  <Tags Remix="via DW YouTube Downloader" Flag="1" />
+  <Infos SongLength="266.263220" LastModified="1792484019" FirstSeen="1792476780" FirstPlay="1792476837" LastPlay="1792484019" PlayCount="3" Bitrate="4781" Cover="1" />
+  <Scan Version="801" Bpm="0.704104" Phase="17.278503" AltBpm="0.528095" Volume="0.966169" Key="B" AudioSig="iVxZV1dnWEg4fFNniEE-UvkH" Flag="32768" />
+  <Poi Pos="3.484444" Type="automix" Point="realStart" />
+  <Poi Pos="259.760181" Type="automix" Point="realEnd" />
+  <Poi Pos="9.650" Type="automix" Point="fadeStart" />
+  <Poi Pos="258.10" Type="automix" Point="fadeEnd" />
+  <Poi Pos="22.908662" Type="automix" Point="cutStart" />
+  <Poi Pos="213.360907" Type="automix" Point="cutEnd" />
+  <Poi Pos="22.931251" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Videos\Toxic Lyrikali - Hate (Official Video) (via DW YouTube Downloader).mkv" FileSize="40742934" Flag="301989952">
+  <Tags Remix="via DW YouTube Downloader" Flag="1" />
+  <Infos SongLength="208.468753" LastModified="1792484703" FirstSeen="1792484186" FirstPlay="1792484239" LastPlay="1792484239" PlayCount="1" Bitrate="1564" Cover="1" />
+  <Scan Version="801" Bpm="0.666667" Phase="21.474989" AltBpm="0.50" Volume="1.443997" Key="Ebm" AudioSig="aXpoZ3ZWaIhno7i2eNa3p04G" Flag="32768" />
+  <Poi Pos="0.058050" Type="automix" Point="realStart" />
+  <Poi Pos="202.988844" Type="automix" Point="realEnd" />
+  <Poi Pos="14.80" Type="automix" Point="fadeStart" />
+  <Poi Pos="202.988844" Type="automix" Point="fadeEnd" />
+  <Poi Pos="21.474830" Type="automix" Point="cutStart" />
+  <Poi Pos="169.988934" Type="automix" Point="cutEnd" />
+  <Poi Pos="21.461147" Num="1" Type="cue" />
+ </Song>
+ <Song FilePath="C:\Users\odhis\Desktop\drake toxic (1).mp3" FileSize="3013596">
+  <Tags Year="2026" Flag="1" />
+  <Infos SongLength="75.0" LastModified="1792487436" FirstSeen="1792484837" Bitrate="321" Cover="2" />
+  <Comment>Recorded using VirtualDJ on 2026-10-20</Comment>
+  <Poi Name="Drake - 0-to-100-Instrumental-Prod.-By-Vinylz-Boi-1da" Num="1" Type="cue" />
+  <Poi Name="Toxic Lyrikali - Hate (Official Video) (via DW YouTube Downloader)" Pos="63.0" Num="2" Type="cue" />
+ </Song>
+</VirtualDJ_Database>

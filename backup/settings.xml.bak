@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+	<audioConfig current="config 1">
+		<setup name="config 1">
+			<audio soundcard="default" leftChannel="1" rightChannel="2" source="master" />
+		</setup>
+	</audioConfig>
+	<automation>
+		<autoBPMMatch>smart</autoBPMMatch>
+		<autoPitchLock modified="yes">yes</autoPitchLock>
+		<autoGain>auto</autoGain>
+		<autoKey>yes</autoKey>
+		<autoCue>skip silence</autoCue>
+		<smartPlay modified="yes">yes, no</smartPlay>
+		<smartPlayLimitPitchRange>yes</smartPlayLimitPitchRange>
+		<smartCue>no</smartCue>
+		<smartLoop>yes</smartLoop>
+		<autoBpmStabilizer>yes</autoBpmStabilizer>
+		<autoBpmStabilizerKeepBpmOnExit>yes</autoBpmStabilizerKeepBpmOnExit>
+		<autoBpmStabilizerMaxRange>20.0</autoBpmStabilizerMaxRange>
+		<quantizeLoop>no</quantizeLoop>
+		<quantizeSetCue>no</quantizeSetCue>
+		<quantizeScratch>no</quantizeScratch>
+		<globalQuantize>1 beat</globalQuantize>
+		<smartScratch>no</smartScratch>
+		<cueLoopAutoSync>yes</cueLoopAutoSync>
+		<resetPitchOnLoad>no</resetPitchOnLoad>
+		<resetEqOnLoad>no</resetEqOnLoad>
+		<resetStemsOnLoad>Pads</resetStemsOnLoad>
+		<resetFXOnLoad>no</resetFXOnLoad>
+		<resetKeyOnLoad>yes</resetKeyOnLoad>
+		<resetGainOnLoad>yes</resetGainOnLoad>
+		<autoHeadphones>always</autoHeadphones>
+		<pflOnSelect>yes</pflOnSelect>
+		<keyMatching>standard</keyMatching>
+	</automation>
+	<controls>
+		<playMode>play-pause</playMode>
+		<cueMode>cue</cueMode>
+		<hotcueMode>play</hotcueMode>
+		<updateHotCueOnCueCombo>yes</updateHotCueOnCueCombo>
+		<hotcueSavesLoop>yes</hotcueSavesLoop>
+		<loopBackMode>smart</loopBackMode>
+		<loopAutoMove>yes</loopAutoMove>
+		<loopDefault modified="yes">64.0, 4.0</loopDefault>
+		<loopRollDefault>0.250</loopRollDefault>
+		<beatjump>1.0</beatjump>
+		<keepPlayingPastEnd>no</keepPlayingPastEnd>
+		<keepPlayStatusOnLoadSong>no</keepPlayStatusOnLoadSong>
+		<eqMode modified="yes">EZRemix</eqMode>
+		<defaultStemsEqMode modified="yes">EZRemix</defaultStemsEqMode>
+		<eqModeDual>Inner</eqModeDual>
+		<stemsBleedMuteVocal>0.80</stemsBleedMuteVocal>
+		<stemsBleedMuteInstru>0.30</stemsBleedMuteInstru>
+		<stemsBleedOnlyVocal>0.0</stemsBleedOnlyVocal>
+		<stemsBleedOnlyInstru>0.0</stemsBleedOnlyInstru>
+		<stemsSplitLeftRight>no</stemsSplitLeftRight>
+		<vinylMode>yes</vinylMode>
+		<masterTempo>yes</masterTempo>
+		<pitchRange modified="yes">20.0</pitchRange>
+		<autoPitchRange>yes</autoPitchRange>
+		<pitchResetSpeed>1.0</pitchResetSpeed>
+		<faderStart>no</faderStart>
+		<faderStartStop>no</faderStartStop>
+		<crossfaderCurve>Full</crossfaderCurve>
+		<crossfaderDisable>no</crossfaderDisable>
+		<crossfaderCustom />
+		<crossfaderHamster>no</crossfaderHamster>
+		<levelfaderHamster>no</levelfaderHamster>
+		<effects>Reverb,Reverb,Wahwah|Flanger,Reverb,Wahwah</effects>
+		<fxLists>Default={default}|Full={all}|Legacy={legacy}|Video={allvideo}</fxLists>
+		<fxListsCurrent>Default</fxListsCurrent>
+		<fxShowLegacyIgnore>no</fxShowLegacyIgnore>
+		<internalPluginLocations />
+		<masterEffects />
+		<mixFx>Echo</mixFx>
+		<pluginBanks>Echo,Flanger,Reverb|Cut,Distortion,Wahwah</pluginBanks>
+		<padsPagesOrder />
+		<padsPagesHidden />
+		<sixteenPadsMode>Auto</sixteenPadsMode>
+		<padsPagesChanged />
+		<padsSkinIndependent>no</padsSkinIndependent>
+		<loopPadPage>0</loopPadPage>
+		<autoSortCues>no</autoSortCues>
+		<autoBpmTransitionLength>4.0</autoBpmTransitionLength>
+	</controls>
+	<skins>
+		<skinWaveformType>shapes</skinWaveformType>
+		<skinOverviewType>auto</skinOverviewType>
+		<skinWaveformScratchType>colors</skinWaveformScratchType>
+		<coloredWaveforms>neutral</coloredWaveforms>
+		<waveUseFrequency>no</waveUseFrequency>
+		<waveGrayOnKill>yes</waveGrayOnKill>
+		<showLyrics>yes</showLyrics>
+		<lyricsWaveformSize>1.0</lyricsWaveformSize>
+		<getLyrics>always</getLyrics>
+		<waveformCenter>Centered</waveformCenter>
+		<skinPlayheadShadow>yes</skinPlayheadShadow>
+		<showGridLines>no</showGridLines>
+		<showBpmChangesAbove>0.0</showBpmChangesAbove>
+		<beatCounterRange>16</beatCounterRange>
+		<rhythmZoom>0.250</rhythmZoom>
+		<scratchZoomVertical>0.250</scratchZoomVertical>
+		<rhythmZoomSaved>0.250</rhythmZoomSaved>
+		<scratchZoomSaved>0.250</scratchZoomSaved>
+		<touchScreenMode>no</touchScreenMode>
+		<multiTouchTwoFingerScroll>no</multiTouchTwoFingerScroll>
+		<onScreenKeyboard>Auto</onScreenKeyboard>
+		<keyboardShowKeymapOverlay>yes</keyboardShowKeymapOverlay>
+		<keyboardKeymapOverlayOnStickyKeys>yes</keyboardKeymapOverlayOnStickyKeys>
+		<skinEmptyButtons>no</skinEmptyButtons>
+		<customButtons />
+		<skin3FxLayout modified="yes">no</skin3FxLayout>
+		<skin6FxLayout>no</skin6FxLayout>
+		<vuMeter>Power</vuMeter>
+		<clockDisplay>12h</clockDisplay>
+		<dateFormat>yyyy/mm/dd</dateFormat>
+		<cueDisplay>name</cueDisplay>
+		<savedLoopDisplay>name</savedLoopDisplay>
+		<displayTime>left</displayTime>
+		<keyDisplay modified="yes">Harmonic</keyDisplay>
+		<cpuMeter>audio</cpuMeter>
+		<hideSongInfo>no</hideSongInfo>
+		<tooltip>yes</tooltip>
+		<tooltipDelay>500</tooltipDelay>
+		<showCoverForDragDrop>yes</showCoverForDragDrop>
+		<RPM>33 RPM</RPM>
+		<dialogsColorTheme>automatic</dialogsColorTheme>
+		<cleartype>yes</cleartype>
+		<maximized modified="yes">0</maximized>
+		<skin modified="yes">Default:Essentials</skin>
+		<skinPosition />
+		<skinWindows>
+			<window name="_mainwindow">
+				<idx0 x="0" y="0" width="1920" height="1032" />
+			</window>
+		</skinWindows>
+		<skinPanels>!videomixer, audiomixer, !scratchmixer, !mastermixer, browser</skinPanels>
+		<skinTextzones />
+		<skinSplitState>crossfader=0.50, crossfader2=0.50, cover=0.150, sideview=0.650, folders=0.180, info=0.860, effects=(1.0), ads=(0.919571)</skinSplitState>
+		<skinRacks />
+		<coloredWaveformsDynamicStems>no</coloredWaveformsDynamicStems>
+	</skins>
+	<audio>
+		<audioAutoDetect>yes</audioAutoDetect>
+		<exclusiveAudioAccess>no</exclusiveAudioAccess>
+		<splitHeadphones>no</splitHeadphones>
+		<equalizerInHeadphones>yes</equalizerInHeadphones>
+		<headphonesGain>0.50</headphonesGain>
+		<prelistenOutput>0</prelistenOutput>
+		<boothMicrophone>no</boothMicrophone>
+		<microphoneToMaster>yes</microphoneToMaster>
+		<metronomeVolume>2.0</metronomeVolume>
+		<gainSliderIncludesAutoGain>yes</gainSliderIncludesAutoGain>
+		<faderCurve>0.50</faderCurve>
+		<zeroDB>Default</zeroDB>
+		<rampStartTime>0.0</rampStartTime>
+		<rampStopTime>0.0</rampStopTime>
+		<rampScratchTime>0.10</rampScratchTime>
+		<equalizerFrequencySpread>Default</equalizerFrequencySpread>
+		<equalizerLowFrequency>200</equalizerLowFrequency>
+		<equalizerMidFrequency>1700</equalizerMidFrequency>
+		<equalizerHighFrequency>6500</equalizerHighFrequency>
+		<filterDefaultResonance>Default</filterDefaultResonance>
+		<fxProcessing>Pre-fader</fxProcessing>
+	</audio>
+	<video>
+		<useVideoSkin modified="yes">no</useVideoSkin>
+		<videoSkin>for Live:live</videoSkin>
+		<showVideoSkinOnPreview modified="yes">no</showVideoSkinOnPreview>
+		<videoLogo>yes</videoLogo>
+		<videoLogoImage />
+		<videoLogoSize>Medium</videoLogoSize>
+		<videoLogoPosition>Right-Top</videoLogoPosition>
+		<videoCrossfader modified="yes">Smart</videoCrossfader>
+		<videoVolumeLink>no</videoVolumeLink>
+		<videoTransition modified="yes">Satellite</videoTransition>
+		<videoTransitionList>{all}</videoTransitionList>
+		<videoRandomTransition>no</videoRandomTransition>
+		<videoFx modified="yes">Boom</videoFx>
+		<videoAudioOnlyVisualisation>Visuals</videoAudioOnlyVisualisation>
+		<letterBoxing>bars</letterBoxing>
+		<videoFPS>30</videoFPS>
+		<videoMicroFrames>Smart</videoMicroFrames>
+		<videoResampleQuality>Medium</videoResampleQuality>
+		<videoShaderQuality>Auto</videoShaderQuality>
+		<videoUseDXVA>yes</videoUseDXVA>
+		<videoDriver>Intel(R) Iris(R) Xe Graphics</videoDriver>
+		<videoMaxMemory>128</videoMaxMemory>
+		<videoDelay>0.0</videoDelay>
+		<videoWindowAlwaysOnTop>yes</videoWindowAlwaysOnTop>
+		<videoWindowPosition>(0x0 1920x1032)=890x261 960x479, (0x0 3840x2064)=1380x727 1920x1080</videoWindowPosition>
+		<videoCreateLinkOnDrop>yes</videoCreateLinkOnDrop>
+		<startVideoOnLoad>yes</startVideoOnLoad>
+		<lyricsCensoredWords />
+		<lyricsCensorMatching>Contains</lyricsCensorMatching>
+		<lyricsCensorVideo>yes</lyricsCensorVideo>
+		<lyricsCensorAudio>no</lyricsCensorAudio>
+	</video>
+	<karaoke>
+		<karaokeBackground>Default</karaokeBackground>
+		<karaokeBackgroundMusic>automix</karaokeBackgroundMusic>
+		<karaokeBackgroundImage />
+		<karaokeBackgroundVolume>0.750</karaokeBackgroundVolume>
+		<karaokeVideoSkin>for Karaoke:karaoke</karaokeVideoSkin>
+		<karaokeSkipSilence>yes</karaokeSkipSilence>
+		<karaokeAutoRemovePlayed>yes</karaokeAutoRemovePlayed>
+		<karaokeDualDeck>no</karaokeDualDeck>
+	</karaoke>
+	<controllers>
+		<mixerOrder>3124</mixerOrder>
+		<controllerTakeoverMode>Pickup</controllerTakeoverMode>
+		<controllerTakeoverModePitch>Pickup</controllerTakeoverModePitch>
+		<touchWheelBackspin>yes</touchWheelBackspin>
+		<touchWheelForwardspin>no</touchWheelForwardspin>
+		<touchWheelSpinThreshold>0.80</touchWheelSpinThreshold>
+		<jogSensitivityScratch>1.0</jogSensitivityScratch>
+		<jogSensitivityCue>0.50</jogSensitivityCue>
+		<jogSensitivityBend>0.050</jogSensitivityBend>
+		<jogVibrationProtection>0</jogVibrationProtection>
+		<motorWheelInstantPlay>yes</motorWheelInstantPlay>
+		<motorWheelInstantStop>yes</motorWheelInstantStop>
+		<motorWheelSmoothPercent>75.0</motorWheelSmoothPercent>
+		<motorWheelLockTime>1.0</motorWheelLockTime>
+		<controllerRefreshRate>0</controllerRefreshRate>
+		<controllerWaveFormZoom>3</controllerWaveFormZoom>
+		<disableBuiltInDefinitions>no</disableBuiltInDefinitions>
+		<createMidiLog>no</createMidiLog>
+		<midiLogLevel>Default</midiLogLevel>
+		<showControllersSubDevices>no</showControllersSubDevices>
+		<controllersCustomization />
+		<djcButtons />
+		<controllerState />
+		<controllerMenu />
+	</controllers>
+	<timecode>
+		<timecodeMode>smart</timecodeMode>
+		<timecodeType>AutoDetect</timecodeType>
+		<timecodeLeadInTime>0.0</timecodeLeadInTime>
+		<timecodeAntiSkip>3</timecodeAntiSkip>
+		<timecodeNeedleDropSync>yes</timecodeNeedleDropSync>
+		<timecodePitchSliderIgnoreBend>yes</timecodePitchSliderIgnoreBend>
+		<timecodeSilence>0.20</timecodeSilence>
+		<timecodeCalibrationVolume>1.0</timecodeCalibrationVolume>
+		<timecodeCalibrationPhase>0.0</timecodeCalibrationPhase>
+	</timecode>
+	<sampler>
+		<samplerBank>VIDEOS</samplerBank>
+		<samplerTriggerMode>on/off</samplerTriggerMode>
+		<samplerDefaultLoopMode>locked</samplerDefaultLoopMode>
+		<samplerForceNbColumns>0</samplerForceNbColumns>
+		<samplerSpanAcrossDecks>no</samplerSpanAcrossDecks>
+		<samplerExportLossless>no</samplerExportLossless>
+		<samplerDontSaveSource>no</samplerDontSaveSource>
+		<samplerRootFolder />
+		<samplerHideDefaultBanks>no</samplerHideDefaultBanks>
+		<samplerHideLegacyBanks>yes</samplerHideLegacyBanks>
+		<samplerOutputDeck>0</samplerOutputDeck>
+		<samplerApplyEffectsOnDeckOutput>no</samplerApplyEffectsOnDeckOutput>
+		<samplerVideoVolumeLink>yes</samplerVideoVolumeLink>
+		<autoSideview>no</autoSideview>
+		<samplerImageSize>small</samplerImageSize>
+		<samplerHeadphones>yes</samplerHeadphones>
+		<samplerShowEffects>no</samplerShowEffects>
+		<samplerShowWaveform>yes</samplerShowWaveform>
+		<samplerIndependentDeckBanks>no</samplerIndependentDeckBanks>
+		<samplerRecordStemsPads>Vocal, Vocal, Vocal, Vocal, HiHat+Kick, HiHat+Kick, HiHat+Kick, HiHat+Kick</samplerRecordStemsPads>
+		<samplerRecordLength>followloop</samplerRecordLength>
+		<shoutoutStyle>shout</shoutoutStyle>
+		<shoutoutVoice>Male</shoutoutVoice>
+		<shoutoutOver>stemswap</shoutoutOver>
+	</sampler>
+	<browser>
+		<fileFormats>mp3,wav,cda,wma,asf,ogg,m4a,aac,aif,aiff,flac,mpc,ape,weba,opus,vdj,vdjcache,vdjedit,vdjsample,mp4,ogm,ogv,avi,mpg,mpeg,wmv,vob,mov,divx,m4v,mkv,flv,webm,vdjcachev,apng</fileFormats>
+		<rootFoldersLocation>LocalMusic=root, OnlineMusic=root, Ideas=root, Stems=root, MyLists=root, MyMusic=LocalMusic, MyVideos=LocalMusic, Drives=LocalMusic, Desktop=LocalMusic, Crates=LocalMusic, iTunes=LocalMusic, Traktor=hidden, RekordBox=hidden, Sampler=LocalMusic, CDJExport=LocalMusic, CloudDrive=OnlineMusic, IDJPool=OnlineMusic, VJPro=OnlineMusic, Digitrax=OnlineMusic, Sunfly=OnlineMusic, Spotify=OnlineMusic, AppleMusic=OnlineMusic, Deezer=OnlineMusic, Tidal=OnlineMusic, Xiami=OnlineMusic, SoundCloud=OnlineMusic, Beatport=OnlineMusic, Beatsource=OnlineMusic, AIPrompt=Ideas, Charts=Ideas, GeniusDJ=Ideas, AskTheDJ=Ideas, History=Ideas, Filters=Ideas</rootFoldersLocation>
+		<browserShortcuts />
+		<browserShortcutsIcons />
+		<browserShortcutsCustomIconFile />
+		<browserShortcutsDefaultIcon>-1</browserShortcutsDefaultIcon>
+		<iTunesDatabaseFile>C:\Users\odhis\Music\iTunes\iTunes Library.xml</iTunesDatabaseFile>
+		<seratoFolder>C:\Users\odhis\Music\_Serato_</seratoFolder>
+		<traktorFolder />
+		<rekordboxFolder />
+		<importV7Databases>yes</importV7Databases>
+		<ignoreDrives />
+		<readOnly>no</readOnly>
+		<searchInFolder>yes</searchInFolder>
+		<searchInDB>yes</searchInDB>
+		<searchInContentUnlimited>yes</searchInContentUnlimited>
+		<searchInOnlineCatalogs>yes</searchInOnlineCatalogs>
+		<folderSearch>no</folderSearch>
+		<folderSearchOptions>mylists, localmusic, m3uplaylists, itunes, serato, rekordbox, traktor, spotify, filters, history</folderSearchOptions>
+		<folderSearchAdditionalListFolders />
+		<ContentUnlimitedWhenEmpty>yes</ContentUnlimitedWhenEmpty>
+		<OnlineCatalogsWhenEmpty>yes</OnlineCatalogsWhenEmpty>
+		<ContentUnlimitedCatalogs />
+		<OnlineCatalogs />
+		<onlineCatalogsContentPreference>All</onlineCatalogsContentPreference>
+		<showMusic>no</showMusic>
+		<showVideo>no</showVideo>
+		<showKaraoke>no</showKaraoke>
+		<searchFields>7</searchFields>
+		<browserColumns>file=titl(25),arti(25),mix(20),leng(10),bpm(10),key(10)|side=titl(40),arti(40),mix(20)|side(rmix)=mix(100)|side(auto)=titl(30),arti(30),mix(20),leng(10),plat(10)|side(kara)=lpos(10),titl(35),arti(35),sing(20)|side(sbnk)=spla(10),titl(60),svol(30)|file(sbnk)=spla(4),spos(4),titl(40),sgrp(20),svol(16),slen(12),sedi(4)|file(play)=titl(25),arti(25),mix(20),leng(10),bpm(10),key(10)</browserColumns>
+		<browserSort>|file(sbnk)=Original Sort Order</browserSort>
+		<browserGridColumns />
+		<infoviewColumns>alba,titl,arti,mix,year,albu,genr,bpm,key,leng,1see,Xply,play,comm,usr1,usr2</infoviewColumns>
+		<showHorizontalSideList>no</showHorizontalSideList>
+		<lockFolderOrder>no</lockFolderOrder>
+		<keepSortOrder>yes</keepSortOrder>
+		<rememberRecurse>no</rememberRecurse>
+		<browserSearchByFirstLetter>no</browserSearchByFirstLetter>
+		<lastSelectedFolder modified="yes">stems:\prepared</lastSelectedFolder>
+		<coverFlow>smart</coverFlow>
+		<lastTrackListDate modified="yes">2026/10/20</lastTrackListDate>
+		<historyDelay>45</historyDelay>
+		<writeHistory>yes</writeHistory>
+		<prelistenVisible>yes</prelistenVisible>
+		<prelistenStopOnChange>no</prelistenStopOnChange>
+		<prelistenStartPos>-1.0</prelistenStartPos>
+		<autoSearchDB>yes</autoSearchDB>
+		<showZipKaraoke>yes</showZipKaraoke>
+		<showM3UAsFolders>yes</showM3UAsFolders>
+		<fontSize>1.0</fontSize>
+		<browserPadding>Medium</browserPadding>
+		<browserBPMDigits>1</browserBPMDigits>
+		<savePlaylist>yes</savePlaylist>
+		<saveUnplayedToSidelist>no</saveUnplayedToSidelist>
+		<removePlayedFromSidelist>no</removePlayedFromSidelist>
+		<browserTextFit>smart</browserTextFit>
+		<tracklistFormat>%author - %titleremix</tracklistFormat>
+		<shellIcons>no</shellIcons>
+		<sideviewShortcuts />
+		<sideViewShortcutsHidden />
+		<sideView modified="yes">automix</sideView>
+		<gridView>no</gridView>
+		<triggerPadView>yes</triggerPadView>
+		<sideViewReco>remixes</sideViewReco>
+		<RemixesViewProvider>iDJPool</RemixesViewProvider>
+		<liveFeedbackProviders>Online</liveFeedbackProviders>
+		<logUnsuccessfulSearches>no</logUnsuccessfulSearches>
+		<shazam />
+		<chartsCountry />
+		<filterFolderSplitGenreBySlash>yes</filterFolderSplitGenreBySlash>
+		<browserAutoZoom>no</browserAutoZoom>
+		<browserFontSizeButtons>no</browserFontSizeButtons>
+		<browserPreviousFoldersButton>no</browserPreviousFoldersButton>
+		<browserDaysSongsAreNew>7</browserDaysSongsAreNew>
+		<browserShowSideviewInLists>no</browserShowSideviewInLists>
+		<disableHotplugForNewLists>no</disableHotplugForNewLists>
+		<disableDuplicateForNewLists>no</disableDuplicateForNewLists>
+		<browserAutoExportM3U>no</browserAutoExportM3U>
+		<browserShowLegacyM3UPlaylists>no</browserShowLegacyM3UPlaylists>
+		<browserAutoOpenNewDrive>yes</browserAutoOpenNewDrive>
+		<cdjExportStemsConfig>Acapella=vocals, Instrumental=instru+bass+kick+hihat, Melody=instru+bass, Beat=kick+hihat</cdjExportStemsConfig>
+		<cdjExportStems>Acapella</cdjExportStems>
+		<cdjExportCompatibility>CDJ2000nexus</cdjExportCompatibility>
+		<cdjExportShowAllDrives>no</cdjExportShowAllDrives>
+		<cdjExportAutoSyncCues>Full</cdjExportAutoSyncCues>
+		<cdjExportCuesAsMemoryPoints>no</cdjExportCuesAsMemoryPoints>
+		<quickFilters />
+		<colorRules />
+		<user1FieldName>User 1</user1FieldName>
+		<user2FieldName>User 2</user2FieldName>
+		<favoriteGenres />
+		<favoriteTags1>hit, crowd pleaser, early night, late night, popular, high energy</favoriteTags1>
+		<favoriteTags2>wedding, birthday, kids, bar mitzvah, church, underground</favoriteTags2>
+	</browser>
+	<tags>
+		<getTagsAuto>yes</getTagsAuto>
+		<setTagsAuto>no</setTagsAuto>
+		<coverDownload>exact</coverDownload>
+		<getTitleFromTags>yes</getTitleFromTags>
+		<getRatingFromTags>no</getRatingFromTags>
+		<getCommentFromTags>yes</getCommentFromTags>
+		<getCuesFromTags>for new files</getCuesFromTags>
+		<getTagFromZip>yes</getTagFromZip>
+		<getRemixWhenParsingFilenames>yes</getRemixWhenParsingFilenames>
+		<useKeyFromTag>no</useKeyFromTag>
+		<cleanTagsInDeckDisplay>yes</cleanTagsInDeckDisplay>
+	</tags>
+	<automix>
+		<automixMode>smart</automixMode>
+		<fadeLength>4.0</fadeLength>
+		<automixRepeat>no</automixRepeat>
+		<automixAutoRemovePlayed>no</automixAutoRemovePlayed>
+		<automixDualDeck>no</automixDualDeck>
+		<autoMixBeatMatchOnFade>yes</autoMixBeatMatchOnFade>
+		<automixSkipLength>4.0</automixSkipLength>
+		<automixMaxLength>0</automixMaxLength>
+		<automixDoubleClick>mix now</automixDoubleClick>
+		<automixTempoMode>keep pitch</automixTempoMode>
+	</automix>
+	<internet>
+		<internetProxyURL />
+		<internetProxyPort />
+		<internetProxyUsername />
+		<internetProxyPassword />
+		<internetLogin />
+		<stayLoggedIn>yes</stayLoggedIn>
+		<dontLogin>no</dontLogin>
+		<oneTimeMsg>0</oneTimeMsg>
+		<checkUpdates>yes</checkUpdates>
+		<earlyAccessUpdates>no</earlyAccessUpdates>
+		<sendHistory>yes</sendHistory>
+		<sendAnonymousStats>yes</sendAnonymousStats>
+		<autoRefreshDRM>yes</autoRefreshDRM>
+		<liveFeedback>yes</liveFeedback>
+		<liveFeedbackUseBpm>yes</liveFeedbackUseBpm>
+		<usageStats>FPS: 30/60, Use: Video, Fx: Satellite:internal, Fx: Visuals:internal</usageStats>
+		<netsearchVideoQuality modified="yes">hd1080</netsearchVideoQuality>
+		<netsearchAudioQuality>high</netsearchAudioQuality>
+		<xiamiLogin />
+		<deezerAccessCode />
+		<deezerLoginStatus>0</deezerLoginStatus>
+		<soundcloudRefreshCode />
+		<soundcloudAccessCode2 />
+		<tidalRefreshCode />
+		<tidalAccessCode2 />
+		<gdriveRefreshCode />
+		<dropboxRefreshCode />
+		<onedriveRefreshCode />
+		<icloudRefreshCode />
+		<cloudDriveEngine>ask</cloudDriveEngine>
+		<cloudDriveSynchronization>one-way</cloudDriveSynchronization>
+		<cloudDriveFullAccess>no</cloudDriveFullAccess>
+		<cloudDriveSync />
+		<cloudDrivePauseSync>no</cloudDrivePauseSync>
+		<iRemote>no</iRemote>
+		<iRemoteList />
+		<iRemoteDefaultPort>4243</iRemoteDefaultPort>
+		<vdjRemoteDevices />
+		<vdjRemoteIPs />
+		<os2l>auto</os2l>
+		<os2lDirectIp />
+		<os2lBeatOffset>0.0</os2lBeatOffset>
+		<oscPort>0</oscPort>
+		<oscPortBack>0</oscPortBack>
+		<oscInitSubscribe />
+		<askTheDJMonitoring>folder</askTheDJMonitoring>
+		<askTheDJFrequency>5</askTheDJFrequency>
+		<spotifyAudioQuality>default</spotifyAudioQuality>
+		<sprftk />
+	</internet>
+	<record>
+		<recordFile modified="yes">drake toxic</recordFile>
+		<recordFormat modified="yes">mp3</recordFormat>
+		<recordQuality modified="yes">high</recordQuality>
+		<recordAutoStart>no</recordAutoStart>
+		<recordWaitForSound>yes</recordWaitForSound>
+		<recordPauseOnSilence>no</recordPauseOnSilence>
+		<recordOverwrite>change filename</recordOverwrite>
+		<recordAutoSplit>no</recordAutoSplit>
+		<recordWriteCueFile>no</recordWriteCueFile>
+		<recordVideoResolution modified="yes">1920x1080 (widescreen)</recordVideoResolution>
+		<recordVideoHardwareAcceleration modified="yes">Intel</recordVideoHardwareAcceleration>
+		<recordMicrophone>yes</recordMicrophone>
+		<recordBitDepth modified="yes">24-bit</recordBitDepth>
+		<recordVideoFps>30</recordVideoFps>
+		<recordVideoCodec>default</recordVideoCodec>
+	</record>
+	<broadcast>
+		<broadcastMode>direct</broadcastMode>
+		<broadcastVideoQuality>mid</broadcastVideoQuality>
+		<broadcastVideoQualityCustom />
+		<broadcastServers>
+			<server name="default" protocol="1" format="1" bitrate="128" />
+		</broadcastServers>
+		<broadcastServer>default</broadcastServer>
+		<broadcastDirectFormat>mp3</broadcastDirectFormat>
+		<broadcastDirectPort>8000</broadcastDirectPort>
+		<broadcastDirectQuality>medium</broadcastDirectQuality>
+		<broadcastDirectMaxClients>64</broadcastDirectMaxClients>
+		<broadcastDirectName />
+		<broadcastSongInfo>yes</broadcastSongInfo>
+		<broadcastSongInfoFormat>%artist - %titleremix</broadcastSongInfoFormat>
+		<podcastName>My VirtualDJ Mix</podcastName>
+		<broadcastVideoProvider>0</broadcastVideoProvider>
+		<broadcastVideoURL />
+		<broadcastVideoKey />
+	</broadcast>
+	<options>
+		<language>English</language>
+		<loadSecurity>on</loadSecurity>
+		<endOfSongWarning>30</endOfSongWarning>
+		<autoDiscMarker>no</autoDiscMarker>
+		<sandboxSplitHeadphones>yes</sandboxSplitHeadphones>
+		<sandboxPreviewOnly>no</sandboxPreviewOnly>
+		<VDJScriptGlobalVariables>$colorscheme=0=0.00000, $jogtype=1818584692=0.00000, $jogcoverart=1818584692=0.00000</VDJScriptGlobalVariables>
+		<crashGuard>yes</crashGuard>
+		<crashReportLevel>0</crashReportLevel>
+		<poiEditorShowAll>no</poiEditorShowAll>
+		<poiEditorSnap>no</poiEditorSnap>
+		<database>1777640828</database>
+		<lastUsedBuild>9644</lastUsedBuild>
+		<lastUse>0</lastUse>
+		<timestamp>612817635</timestamp>
+		<guid>48c3a532-3d77-4a25-b10a-3461c6f77eb9</guid>
+		<nonColoredPoi>Default</nonColoredPoi>
+		<colorPicker>auto</colorPicker>
+		<colorPickersystemCustom />
+		<lightShowProgram>Auto</lightShowProgram>
+		<settingPage modified="yes">Record</settingPage>
+		<showTutorials modified="yes">no</showTutorials>
+		<shopDemoMode>no</shopDemoMode>
+		<dontShowAgain>videoskin</dontShowAgain>
+		<autoUpdateFailedCount modified="yes">0</autoUpdateFailedCount>
+		<autoUpdateFailedSvn>0</autoUpdateFailedSvn>
+		<autoUpdateFailedTime />
+		<vstFxFolder />
+		<showTipOfTheDay>yes</showTipOfTheDay>
+		<tipOfTheDayAlreadySeen />
+		<skinStarterTip>20574</skinStarterTip>
+		<limitedEdition>no</limitedEdition>
+		<forceLite>no</forceLite>
+		<startOfDayHour>8</startOfDayHour>
+		<eventSchedule />
+		<automaticDatabaseBackupPeriod>0</automaticDatabaseBackupPeriod>
+		<databaseBackupLast modified="yes">1790321811</databaseBackupLast>
+		<databaseBackupLocation />
+		<watchFolders />
+		<fluidAnalysis>manual</fluidAnalysis>
+		<fluidRange>60-180</fluidRange>
+		<fluidSensitivity>30</fluidSensitivity>
+		<fluidDownbeatSensitivity>8</fluidDownbeatSensitivity>
+		<actionEditorDefaultView>natural language</actionEditorDefaultView>
+	</options>
+	<performance>
+		<stemsRealtimeSeparation>Prepared</stemsRealtimeSeparation>
+		<stemsSavedStems>Manual</stemsSavedStems>
+		<stemsGPU>Automatic</stemsGPU>
+		<stemsFix>Don&apos;t use GPU</stemsFix>
+		<stemsSavedFolder />
+		<stemsFixExtra />
+		<stemsSpeed>551, 0</stemsSpeed>
+		<skinUseLowPowerGPU>Default</skinUseLowPowerGPU>
+		<skinFPS>30</skinFPS>
+		<sampleRate>48000</sampleRate>
+		<latency>0</latency>
+		<ultraLatency>yes</ultraLatency>
+		<maxPreloadLength>60</maxPreloadLength>
+		<maxStemLength>60</maxStemLength>
+		<pitchQuality>3</pitchQuality>
+		<scratchFilterQuality>16</scratchFilterQuality>
+		<songLoadPriority>normal</songLoadPriority>
+		<experimentalBeatAnalyzer>no</experimentalBeatAnalyzer>
+		<experimentalSkinEngine>auto</experimentalSkinEngine>
+		<experimentalWaveColors>yes</experimentalWaveColors>
+		<safeVideoDecode>no</safeVideoDecode>
+		<analyzeSongsOnView>no</analyzeSongsOnView>
+		<keepBPMonAnalyzerUpdate>no</keepBPMonAnalyzerUpdate>
+		<peakAudioCpu modified="yes">0.294760</peakAudioCpu>
+		<peakAudioCpuStems>0.0</peakAudioCpuStems>
+		<disableMidi2 modified="yes">no</disableMidi2>
+		<experimentalFasterStartup>no</experimentalFasterStartup>
+	</performance>
+</settings>

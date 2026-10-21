@@ -63,22 +63,22 @@ def parse_args():
     parser.add_argument(
         "--mode",
         type=str,
-        default="both",
-        choices=["both", "crossfade", "normal"],
-        help="Rendering mode: 'both' (default), 'crossfade' (smart blends), or 'normal' (sequential drops)"
+        default="crossfade",
+        choices=["crossfade", "normal", "both"],
+        help="Rendering mode: 'crossfade' (default: gradual cue transitions), 'normal' (sequential drops), or 'both'"
     )
     parser.add_argument(
         "--crossfade-mode",
         type=str,
-        default="random",
-        choices=["random", "dynamic", "bass-swap", "filter-sweep", "echo-out", "equal-power"],
-        help="Global transition style: 'random' (randomizes scratch-free styles), 'dynamic', 'bass-swap', 'filter-sweep', 'echo-out', 'equal-power'"
+        default="gradual",
+        choices=["gradual", "equal-power", "bass-swap"],
+        help="Global transition style: 'gradual' (default: Cue 2 to Cue 3 gradual crossfade with LR-4 bass crossover), 'equal-power'"
     )
     parser.add_argument(
         "--trans-style",
         type=str,
         default="",
-        help="Per-transition custom styles (e.g. '1=bass-swap,2=filter-sweep,3=echo-out,4=bass-swap')"
+        help="Per-transition custom styles (e.g. '1=gradual,2=equal-power')"
     )
     parser.add_argument(
         "--trans-bars",
@@ -284,124 +284,69 @@ def parse_custom_styles(trans_style_str):
 
 def get_transition_mode(idx, global_mode, custom_styles, last_mode=None):
     if idx in custom_styles:
-        mode = custom_styles[idx]
-        if mode == "scratch-in":
-            return "bass-swap"  # strictly no scratches in continuous mixes
-        return mode
-    if global_mode == "scratch-in":
-        return "bass-swap"
-    if global_mode not in ("random", "dynamic"):
-        return global_mode
-
-    # Random selection among professional scratch-free transitions
-    candidates = ["bass-swap", "filter-sweep", "echo-out"]
-    if last_mode in candidates and len(candidates) > 1:
-        pool = [c for c in candidates if c != last_mode]
-    else:
-        pool = candidates
-    return random.choice(pool)
+        return custom_styles[idx]
+    if global_mode == "equal-power":
+        return "equal-power"
+    return "gradual"
 
 # -----------------------------------------------------------------------------
 # ADVANCED DSP TRANSITION BLENDERS
 # -----------------------------------------------------------------------------
 
-def blend_bass_swap(a_seg, b_seg, sr=44100, swap_ratio=0.5):
+def blend_gradual(a_seg, b_seg, sr=44100):
     """
-    True Linkwitz-Riley 4th Order (LR-4) Crossover Bass-Swap.
-    Separates low frequencies (<220 Hz) and mid/highs (>220 Hz).
-    Mids/Highs crossfade smoothly with equal-power curves.
-    Low-end swaps cleanly at swap_ratio, completely eliminating log drum mud!
+    Studio-Grade Gradual DJ Crossfade between Cue 2 and Cue 3.
+    Track A gradually fades out from 100% down to 0% (cosine equal-power curve).
+    Track B gradually fades in from 0% up to 100% (sine equal-power curve).
+    Linkwitz-Riley 4th Order (LR-4) zero-phase crossover at 220 Hz smoothly
+    swaps low-end frequencies across the midpoint so kicks and sub-bass never
+    clash or cause volume dips, while mids and vocals blend seamlessly.
     """
+    n = min(len(a_seg), len(b_seg))
+    a_seg = a_seg[:n]
+    b_seg = b_seg[:n]
+
+    t = np.linspace(0, 1, n)
+    cos_curve = np.cos(t * np.pi * 0.5)[:, None]
+    sin_curve = np.sin(t * np.pi * 0.5)[:, None]
+
     fc = 220.0
     b_l, a_l = signal.butter(2, fc, btype='low', fs=sr)
     b_h, a_h = signal.butter(2, fc, btype='high', fs=sr)
 
-    # LR-4 zero-phase crossover
     a_low = signal.filtfilt(b_l, a_l, a_seg, axis=0)
     a_high = signal.filtfilt(b_h, a_h, a_seg, axis=0)
     b_low = signal.filtfilt(b_l, a_l, b_seg, axis=0)
     b_high = signal.filtfilt(b_h, a_h, b_seg, axis=0)
 
-    n = len(a_seg)
-    t = np.linspace(0, 1, n)
-    cos_curve = np.cos(t * np.pi * 0.5)[:, None]
-    sin_curve = np.sin(t * np.pi * 0.5)[:, None]
+    # Mids & highs crossfade smoothly across the entire cue window
     high_blend = a_high * cos_curve + b_high * sin_curve
 
-    # Smooth 0.5s swap centered at swap_ratio
-    swap_center = int(round(n * swap_ratio))
-    half_w = int(round(sr * 0.25))
+    # Lows swap smoothly across the midpoint of the transition
+    swap_center = n // 2
+    half_w = max(int(round(sr * 0.75)), 1)  # 1.5s musical bass handover window
     s_start = max(0, swap_center - half_w)
     s_end = min(n, swap_center + half_w)
 
     low_env_a = np.ones(n, dtype=np.float32)
-    low_env_a[s_end:] = 0.0
-    low_env_a[s_start:s_end] = np.linspace(1.0, 0.0, s_end - s_start)
-    low_env_b = 1.0 - low_env_a
+    low_env_b = np.zeros(n, dtype=np.float32)
+
+    swap_len = s_end - s_start
+    if swap_len > 0:
+        ramp = np.linspace(0.0, 1.0, swap_len)
+        low_env_a[s_start:s_end] = np.cos(ramp * np.pi * 0.5)
+        low_env_a[s_end:] = 0.0
+        low_env_b[s_start:s_end] = np.sin(ramp * np.pi * 0.5)
+        low_env_b[s_end:] = 1.0
 
     low_blend = a_low * low_env_a[:, None] + b_low * low_env_b[:, None]
     return high_blend + low_blend
 
-def blend_filter_sweep(a_seg, b_seg, sr=44100):
-    """
-    Dynamic High-Pass Filter sweep.
-    Progressively filters Track A's bass and lower mids (60 Hz -> 2000 Hz),
-    turning it into an airy wash before Track B's full drop hits.
-    """
-    n = len(a_seg)
-    q = n // 4
-    cutoffs = [60.0, 220.0, 700.0, 2000.0]
-    a_filtered = np.zeros_like(a_seg)
-    for i in range(4):
-        s_idx = i * q
-        e_idx = (i + 1) * q if i < 3 else n
-        chunk = a_seg[s_idx:e_idx]
-        b_hp, a_hp = signal.butter(2, cutoffs[i], btype='high', fs=sr)
-        a_filtered[s_idx:e_idx] = signal.filtfilt(b_hp, a_hp, chunk, axis=0)
-
-    t = np.linspace(0, 1, n)
-    a_env = ((1.0 - t)**2.0)[:, None]
-    b_env = np.sin(t * np.pi * 0.5)[:, None]
-    return a_filtered * a_env + b_seg * b_env
-
-def blend_echo_out(a_seg, b_seg, sr=44100, bpm=118.0, decay=0.55):
-    """
-    Tempo-Synced 1-Beat Dub Delay Freeze.
-    Track A plays to the midpoint, cuts, and echoes out with 55% decay
-    dissolving under Track B's clean drop.
-    """
-    n = len(a_seg)
-    mid = n // 2
-    beat_s = 60.0 / bpm
-    delay_samp = int(round(sr * beat_s))
-
-    a_echoed = np.zeros_like(a_seg)
-    a_echoed[:mid] = a_seg[:mid]
-
-    tail_source = a_seg[max(0, mid - delay_samp):mid]
-    for rep in range(1, 6):
-        s = mid + (rep - 1) * delay_samp
-        e = min(n, s + len(tail_source))
-        if s < n:
-            a_echoed[s:e] += tail_source[:e - s] * (decay ** rep)
-
-    b_out = np.zeros_like(b_seg)
-    b_out[mid:] = b_seg[mid:]
-    fade_len = int(sr * 0.015)
-    b_out[mid:mid+fade_len] *= np.linspace(0, 1, fade_len)[:, None]
-
-    return a_echoed + b_out
-
-def blend_scratch_in(a_seg, b_seg, sr=44100, bpm=118.0):
-    """
-    Deprecated: Redirected to smooth Linkwitz-Riley Bass-Swap.
-    Ensures zero scratching sound effects exist in continuous mixes.
-    """
-    return blend_bass_swap(a_seg, b_seg, sr=sr, swap_ratio=0.5)
-
 def blend_equal_power(a_seg, b_seg):
-    """Equal-Power quarter-sine crossfade"""
-    n = len(a_seg)
+    """Pure mathematical equal-power crossfade (no frequency split)."""
+    n = min(len(a_seg), len(b_seg))
+    a_seg = a_seg[:n]
+    b_seg = b_seg[:n]
     t = np.linspace(0, 1, n)
     cos_curve = np.cos(t * np.pi * 0.5)[:, None]
     sin_curve = np.sin(t * np.pi * 0.5)[:, None]
@@ -520,12 +465,12 @@ def load_audio_clip(path, start_s, duration_s=None, end_s=None, sr=44100, tempo_
     return raw.reshape(-1, 2)
 
 # -----------------------------------------------------------------------------
-# SMART CROSSFADED MIX (Advanced DSP Transitions)
+# SMART CROSSFADED MIX (Studio-Grade Gradual Cue Transitions)
 # -----------------------------------------------------------------------------
 
 def render_crossfade_mix(tracks, args, output_file):
     print("\n" + "-" * 78)
-    print(f" RENDERING SMART CROSSFADED MIX (DSP Transitions | Target: {args.target_lufs} LUFS)...")
+    print(f" RENDERING SMART CROSSFADED MIX (Gradual Cue Transitions | Target: {args.target_lufs} LUFS)...")
     print("-" * 78)
 
     sr = 44100
@@ -534,16 +479,14 @@ def render_crossfade_mix(tracks, args, output_file):
     # Determine transition lengths and styles for each transition
     trans_durations = []
     trans_modes = []
-    last_picked_mode = None
 
     for i in range(len(tracks) - 1):
         t_a = tracks[i]
         t_b = tracks[i + 1]
         bpm_a = t_a["bpm"] or 118.0
         bpm_b = t_b["bpm"] or 118.0
-        bpm_diff = abs(bpm_a - bpm_b)
 
-        # Determine duration (phrase-aligned to 16 bars)
+        # Transition duration strictly determined by Cue 2 (fade) to Cue 3 (exit/cut)
         if args.trans_bars is not None and args.trans_bars > 0:
             fade_dur = args.trans_bars * 4.0 * (60.0 / bpm_a)
         elif t_a["cue_fade"] is not None and t_a["cue_exit"] is not None and t_a["cue_exit"] > t_a["cue_fade"]:
@@ -551,12 +494,7 @@ def render_crossfade_mix(tracks, args, output_file):
         else:
             fade_dur = 16.0 * 4.0 * (60.0 / bpm_a)  # Default 16 bars (64 beats)
 
-        mode = get_transition_mode(i, args.crossfade_mode, custom_styles, last_mode=last_picked_mode)
-        if bpm_diff > 12.0 and i not in custom_styles:
-            # Significant tempo shift across brackets: auto-apply echo-out drop for clean transition
-            mode = "echo-out"
-
-        last_picked_mode = mode
+        mode = get_transition_mode(i, args.crossfade_mode, custom_styles)
         trans_durations.append(fade_dur)
         trans_modes.append(mode)
 
@@ -570,126 +508,102 @@ def render_crossfade_mix(tracks, args, output_file):
             tempo_note = f" [Tempo Shift: {bpm_a:.1f} -> {bpm_b:.1f} BPM]"
         print(f"  * Transition {i+1} -> {i+2}: {dur:.1f}s ({mode.upper()}){tempo_note} | Tracks: {tracks[i]['title']} -> {tracks[i+1]['title']}")
 
-    # Load audio clips for each track
-    track_buffers = []
-    for i, t in enumerate(tracks):
-        is_last = (i == len(tracks) - 1)
-        start_time = t["cue_entry"]
-
-        if is_last:
-            end_time = t["length"]
-        else:
-            fade_dur = trans_durations[i]
-            if t["cue_fade"] is not None:
-                end_time = t["cue_fade"] + fade_dur
-            else:
-                end_time = t["length"]
-
-        # Ensure valid range
-        if end_time <= start_time:
-            end_time = t["length"]
-
-        # Load raw audio via ffmpeg
-        cmd = [
-            "ffmpeg", "-y",
-            "-ss", f"{start_time:.3f}",
-            "-to", f"{end_time:.3f}",
-            "-i", t["path"],
-            "-f", "s16le", "-ac", "2", "-ar", str(sr), "-"
-        ]
-        proc = subprocess.run(cmd, capture_output=True, check=True)
-        raw = np.frombuffer(proc.stdout, dtype=np.int16).astype(np.float32) / 32768.0
-        buf = raw.reshape(-1, 2)
-        track_buffers.append(buf)
-
     # Assemble master audio with DSP transitions
     timeline_markers = []
     master_blocks = []
     current_time_s = 0.0
 
-    for i in range(len(tracks)):
-        curr_buf = track_buffers[i]
-        t = tracks[i]
-        is_last = (i == len(tracks) - 1)
+    # Start first track at its cue_entry
+    timeline_markers.append((current_time_s, tracks[0]["artist"], tracks[0]["title"], None))
+    curr_in_pos = tracks[0]["cue_entry"]
 
-        if is_last:
-            # Last track plays to end, add 4s fade out
-            fade_out_len = min(int(sr * 4.0), len(curr_buf))
-            if fade_out_len > 0:
-                curr_buf[-fade_out_len:] *= np.linspace(1, 0, fade_out_len)[:, None]
-            master_blocks.append(curr_buf)
-            break
-
+    for i in range(len(tracks) - 1):
+        t_a = tracks[i]
+        t_b = tracks[i + 1]
         fade_dur = trans_durations[i]
         mode = trans_modes[i]
-        n_trans = int(round(sr * fade_dur))
+        bpm_a = t_a["bpm"] or 118.0
+        bpm_b = t_b["bpm"] or 118.0
 
-        # Check that buffer is long enough for transition
-        if len(curr_buf) < n_trans:
-            n_trans = len(curr_buf) // 2
+        # Cue 2 is the fade start point
+        if t_a["cue_fade"] is not None and t_a["cue_fade"] > curr_in_pos:
+            fade_start = t_a["cue_fade"]
+        else:
+            fade_start = max(curr_in_pos, (t_a["length"] or 180.0) - fade_dur)
 
-        # Split curr_buf into solo part and transition part
-        solo_part = curr_buf[:-n_trans]
-        a_trans = curr_buf[-n_trans:]
+        # 1. Track A Solo Section: from curr_in_pos up to Cue 2 (fade_start)
+        solo_dur = max(0.0, fade_start - curr_in_pos)
+        if solo_dur > 0.02:
+            solo_audio = load_audio_clip(t_a["path"], start_s=curr_in_pos, duration_s=solo_dur, sr=sr)
+            master_blocks.append(solo_audio)
+            current_time_s += len(solo_audio) / sr
 
-        # Add solo part of current track
-        master_blocks.append(solo_part)
-        mode_used = trans_modes[i-1] if i > 0 else None
-        timeline_markers.append((current_time_s, t["artist"], t["title"], mode_used))
-        current_time_s += len(solo_part) / sr
+        # 2. Gradual Crossfade Transition Window: Cue 2 to Cue 3
+        # Track A fades out over fade_dur
+        a_trans = load_audio_clip(t_a["path"], start_s=fade_start, duration_s=fade_dur, sr=sr)
 
-        # Next track transition buffer (with tempo matching if tempos differ)
-        next_buf = track_buffers[i + 1]
-        bpm_a = tracks[i]["bpm"] or 118.0
-        bpm_b = tracks[i + 1]["bpm"] or 118.0
+        # Track B enters at its cue_entry and fades in over fade_dur
+        b_entry = t_b["cue_entry"]
         bpm_diff = abs(bpm_a - bpm_b)
 
-        if 0.5 < bpm_diff <= 12.0 and mode != "echo-out":
-            # Apply pitch-preserving tempo sync across the transition window
+        if 0.5 < bpm_diff <= 12.0:
             tempo_ratio = bpm_a / bpm_b
-            dur_b_needed = fade_dur / tempo_ratio
+            dur_b_needed = fade_dur * tempo_ratio
             b_trans = load_audio_clip(
-                tracks[i + 1]["path"],
-                start_s=tracks[i + 1]["cue_entry"],
+                t_b["path"],
+                start_s=b_entry,
                 duration_s=dur_b_needed,
                 sr=sr,
                 tempo_ratio=tempo_ratio
             )
-            if len(b_trans) > len(a_trans):
-                b_trans = b_trans[:len(a_trans)]
-            elif len(b_trans) < len(a_trans):
-                b_trans = np.pad(b_trans, ((0, len(a_trans) - len(b_trans)), (0, 0)))
-            n_consumed = int(round(sr * dur_b_needed))
-            track_buffers[i + 1] = next_buf[n_consumed:]
         else:
-            if len(next_buf) < n_trans:
-                n_trans = min(n_trans, len(next_buf) // 2)
-                a_trans = a_trans[-n_trans:]
-            b_trans = next_buf[:n_trans]
-            track_buffers[i + 1] = next_buf[n_trans:]
+            dur_b_needed = fade_dur
+            b_trans = load_audio_clip(
+                t_b["path"],
+                start_s=b_entry,
+                duration_s=fade_dur,
+                sr=sr,
+                tempo_ratio=1.0
+            )
 
-        # Apply specific DSP transition blend (smooth musical transitions - no scratching)
-        if mode == "bass-swap" or mode == "scratch-in":
-            blended = blend_bass_swap(a_trans, b_trans, sr=sr, swap_ratio=args.bass_swap_ratio)
-        elif mode == "filter-sweep":
-            blended = blend_filter_sweep(a_trans, b_trans, sr=sr)
-        elif mode == "echo-out":
-            blended = blend_echo_out(a_trans, b_trans, sr=sr, bpm=bpm_a)
-        else: # equal-power
+        # Match exact sample lengths
+        target_len = len(a_trans)
+        if len(b_trans) > target_len:
+            b_trans = b_trans[:target_len]
+        elif len(b_trans) < target_len:
+            b_trans = np.pad(b_trans, ((0, target_len - len(b_trans)), (0, 0)))
+
+        # Blend transition using gradual DJ crossfader
+        if mode == "equal-power":
             blended = blend_equal_power(a_trans, b_trans)
+        else:
+            blended = blend_gradual(a_trans, b_trans, sr=sr)
+
+        # Mark Track B entry on the mixtape timeline
+        timeline_markers.append((current_time_s, t_b["artist"], t_b["title"], mode))
 
         master_blocks.append(blended)
         current_time_s += len(blended) / sr
 
-        master_blocks.append(blended)
-        current_time_s += len(blended) / sr
+        # Track B's playback position for its subsequent solo / transition
+        curr_in_pos = b_entry + dur_b_needed
 
-        # Shorten next_buf by removing the transition part that was already blended
-        track_buffers[i + 1] = next_buf[n_trans:]
-
-    # Add last track marker
+    # 3. Final Track Solo Section (plays out to full length with smooth 4s fade-out)
     last_t = tracks[-1]
-    timeline_markers.append((current_time_s, last_t["artist"], last_t["title"], trans_modes[-1]))
+    last_end = last_t["length"]
+    if last_end <= curr_in_pos:
+        last_end = last_t["length"]
+
+    last_dur = max(0.1, last_end - curr_in_pos)
+    last_audio = load_audio_clip(last_t["path"], start_s=curr_in_pos, duration_s=last_dur, sr=sr)
+
+    # Smooth 4.0s fade out on mixtape finale
+    fade_out_len = min(int(sr * 4.0), len(last_audio))
+    if fade_out_len > 0:
+        last_audio[-fade_out_len:] *= np.linspace(1.0, 0.0, fade_out_len)[:, None]
+
+    master_blocks.append(last_audio)
+    current_time_s += len(last_audio) / sr
 
     # Concatenate master audio
     print("\nConcatenating master audio stream...")

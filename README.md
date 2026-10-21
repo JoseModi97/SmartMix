@@ -24,11 +24,10 @@ python smartmix.py
 
 ### What Happens in This Single Run:
 1. **Reads VirtualDJ Automix Queue:** Automatically syncs the song order directly from VirtualDJ (`Sideview\automix.vdjfolder`).
-2. **Extracts Exact Hotcues:** Pulls Cue 1, Cue 2, and Cue 3 from VirtualDJ's `database.xml`.
-3. **Renders Option 1 — Smart Crossfaded Continuous Mix:** Seamless 16-bar phrase blends with Linkwitz-Riley LR-4 Bass-Swaps, Filter-Sweeps, Echo-Outs, and Equal-Power blends (**100% scratch-free**) (`Amapiano_Continuous_Mix_Crossfaded.mp3`).
-4. **Renders Option 2 — Normal Cut Continuous Mix:** Clean, on-beat sequential cue drops with zero overlap, micro-faded to prevent digital clicks (`Amapiano_Continuous_Mix_Normal.mp3`).
-5. **EBU R128 Studio Mastering:** Normalizes all outputs to `-14.0 LUFS` with a `-1.5 dBTP` true-peak ceiling (zero clipping, punchy log drums).
-6. **Prints Tracklist & Timestamps:** Gives you a timestamped cue sheet ready for tracklist descriptions and chapter markers.
+2. **Extracts Exact Hotcues:** Pulls Cue 1 (entry), Cue 2 (fade start), and Cue 3 (fade end / cut) from VirtualDJ's `database.xml`.
+3. **Renders Master Smart Crossfaded Continuous Mix:** Mathematical, gradual crossfade according to Cue 2 and Cue 3 with zero-phase Linkwitz-Riley LR-4 Bass crossover (**100% scratch-free, zero abrupt cuts, zero echo freezes**) (`Amapiano_Continuous_Mix_Crossfaded.mp3`).
+4. **EBU R128 Studio Mastering:** Normalizes the master continuous mix to `-14.0 LUFS` with a `-1.5 dBTP` true-peak ceiling (zero clipping, punchy log drums).
+5. **Prints Tracklist & Timestamps:** Gives you a timestamped cue sheet ready for YouTube/Mixcloud descriptions and chapter markers.
 
 ---
 
@@ -45,14 +44,13 @@ You do **not** need that folder! SmartMix dynamically determines the best output
 3. **Universal Fallback:** If neither applies, SmartMix automatically creates and outputs to `~/Downloads/SmartMix/` or `~/Downloads/Amapiano/`.
 4. **Zero Crashing:** The directory is automatically created (`os.makedirs`) if it does not exist.
 
-### Standard Output Files:
+### Standard Output File:
 
 | Output File | Description | Style / Transitions |
 | :--- | :--- | :--- |
-| **`Amapiano_Continuous_Mix_Crossfaded.mp3`** | Full Continuous Mix (Smart Overlaps) | Seamless 16-bar transitions: LR-4 Bass-Swaps, Filter-Sweeps, Echo-Outs |
-| **`Amapiano_Continuous_Mix_Normal.mp3`** | Full Continuous Mix (Clean Sequential Cuts) | Radio / live showcase cue-drop cuts (Zero overlap) |
+| **`<MixName>_Continuous_Mix_Crossfaded.mp3`** | Master Continuous Mix | Gradual Cue 2 $\to$ Cue 3 Crossfade (LR-4 Bass Crossover, Zero Scratches) |
 
-*(Note: If you ever want a standalone DJ scratch performance routine on the lead track, simply pass `--with-scratch-preview` to generate `Heavy-K_No_Bad_Vibes_DJ_Scratch_Preview.mp3`).*
+*(Note: If you ever want a standalone DJ scratch performance routine on the lead track, simply pass `--with-scratch-preview` to generate `<MixName>_DJ_Scratch_Preview.mp3`).*
 
 ---
 
@@ -120,33 +118,21 @@ Wait a few moments for audio rendering and mastering to finish. That's it!
 
 ---
 
-## 🎛️ Transition Styles & DSP Modes (Zero Scratches in Continuous Mixes)
+## 🎛️ Gradual Transition Engine (According to Cue 2 & Cue 3)
 
-SmartMix includes studio-grade transition algorithms designed specifically for rhythmically intense genres like Amapiano, Afro House, and Dancehall. Continuous mixes are **100% free of scratch sound effects**:
+SmartMix transitions are built strictly around your VirtualDJ Hotcues:
+- **Cue 1 (`In` / `Entry`):** Where the track starts playing.
+- **Cue 2 (`Fade Out` / `Mix Out`):** The exact beat where the crossfade starts. Track A is at 100% volume; Track B starts fading in at 0% volume.
+- **Cue 3 (`Cut` / `Exit`):** The exact beat where the crossfade completes. Track A reaches 0% volume and stops completely; Track B reaches 100% volume.
 
-### 1. Dynamic Mode (`--crossfade-mode dynamic`) — *Default*
-Intelligently alternates musical transition styles across consecutive tracks so every transition feels fresh, seamless, and professional:
-- **Transition A $\to$ B:** Linkwitz-Riley Bass-Swap
-- **Transition B $\to$ C:** High-Pass Filter Sweep
-- **Transition C $\to$ D:** Echo-Out Dub Delay Freeze
+### How the Gradual Transition Works:
+1. **Mathematical Equal-Power Crossfade:** Outgoing Track A follows $\cos(t \cdot \pi / 2)$ down to 0%, while incoming Track B follows $\sin(t \cdot \pi / 2)$ up to 100%. Total acoustic power remains steady throughout the transition with zero volume dips or sudden spikes.
+2. **Linkwitz-Riley LR-4 Bass Crossover (Zero Low-End Mud):** Low frequencies (<220 Hz) smoothly hand over across the midpoint. Vocals, synths, and high hats blend gradually across the entire duration between Cue 2 and Cue 3, while kicks and sub-bass swap cleanly without clashing or phasing.
+3. **Zero Scratches & Zero Echo Freezes:** No scratch sound effects, no delay loops, and no abrupt cuts. Pure, seamless DJ blending.
 
-### 2. Linkwitz-Riley Bass-Swap (`--crossfade-mode bass-swap`)
-Uses a true 4th-order (LR-4) zero-phase frequency crossover at **220 Hz**. Mid and high frequencies blend smoothly over 16 bars, while the sub and log drum frequencies swap cleanly at the midpoint (ratio 0.5). **Result:** Zero log-drum clashing or low-end distortion.
-
-### 3. High-Pass Filter Sweep (`--crossfade-mode filter-sweep`)
-Applies a 4-stage resonant high-pass filter ($60\text{ Hz} \to 2000\text{ Hz}$) with quadratic decay on the outgoing track, turning it into an airy wash right before the incoming track's log drum drops.
-
-### 4. Echo-Out Freeze (`--crossfade-mode echo-out`)
-A tempo-synced 1-beat (508ms) stereo dub delay freeze with 55% decay on the outgoing track that dissolves underneath the incoming track's intro.
-
-### 5. Equal-Power Blend (`--crossfade-mode equal-power`)
-A mathematical quarter-sine equal-power crossfade curve ensuring total sound energy never dips or peaks during transitions.
-
-### Custom Per-Transition Styling
-You can specify exact transition styles for specific song changes using `--trans-style`:
-```bash
-python smartmix.py --trans-style "1=bass-swap,2=filter-sweep,3=echo-out,4=bass-swap"
-```
+### Transition Modes Available:
+- **`gradual` (Default):** Full equal-power crossfade between Cue 2 and Cue 3 with LR-4 zero-phase low-end crossover.
+- **`equal-power`:** Mathematical equal-power crossfade across all frequencies.
 
 ---
 
@@ -158,12 +144,8 @@ SmartMix is **not restricted to a fixed playlist, tempo, or genre**:
 Whatever audio files you drag into VirtualDJ Automix (MP3, WAV, FLAC, M4A, AAC) from any folder or drive are loaded dynamically. SmartMix reads each track's individual length, BPM, and cue points from VirtualDJ's database.
 
 ### 2. How Different Speeds (BPMs) Are Handled:
-- **Option 1: Normal Cut Mix (`--mode normal`):**
-  Works **100% flawlessly across ANY speed or tempo change** (e.g. 80 BPM into 130 BPM). Track A plays to the cue cutoff, cleanly cuts on the beat, and Track B drops on Beat 1 of its intro. Because there is zero overlap, beatgrids never clash!
-- **Option 2: Smart Crossfade Mix (`--mode crossfade`):**
-  - **Same / Similar Tempo ($\Delta\text{BPM} \le 0.5$ BPM):** Seamless 16-bar phrase blending.
-  - **DJ Pitch Range ($0.5 < \Delta\text{BPM} \le 12.0$ BPM):** SmartMix automatically applies pitch-preserving time-stretching (`atempo`) across the 16-bar transition window so incoming Track B locks 1:1 in phase with Track A! Once the blend finishes, Track B smoothly plays at its native speed.
-  - **Large Tempo Shift ($\Delta\text{BPM} > 12.0$ BPM):** SmartMix automatically switches the transition to an **Echo-Out drop**. Track A echoes out over 1-2 beats with a delay freeze, while Track B drops in at its own native tempo on Beat 1 without awkward time-stretching.
+- **Same / Similar Tempo ($\Delta\text{BPM} \le 0.5$ BPM):** Seamless phrase blending across Cue 2 to Cue 3.
+- **Tempo Differences ($0.5 < \Delta\text{BPM} \le 12.0$ BPM):** SmartMix automatically applies pitch-preserving time-stretching (`atempo`) across the Cue 2 $\to$ Cue 3 transition window so incoming Track B locks 1:1 in phase with Track A! Once Cue 3 is reached and Track A finishes, Track B continues playing solo at its native BPM.
 
 ### 3. Custom Mix Name & Genre (`--mix-name`)
 You can compile mixes for any genre:
@@ -181,9 +163,7 @@ This automatically tags ID3 metadata and names output files accordingly (e.g. `A
 | **Track List** | Completely dynamic (whatever songs are in VirtualDJ Automix) |
 | **Song Lengths** | Completely dynamic (uses each track's individual duration & cues) |
 | **BPM / Speed** | Auto-detected per song; tempo-matched during crossfades |
-| **Normal Cut Transitions** | 100% speed-agnostic; cuts on beat 4, drops on beat 1 with zero overlap |
-| **Crossfade Transitions** | Automatic phase-lock time-stretching within mixable range ($\le 12$ BPM) |
-| **Large Tempo Jumps** | Auto-routes to Echo-Out drop or Normal Cut to prevent trainwrecks |
+| **Crossfade Transitions** | Gradual Cue 2 $\to$ Cue 3 transition with pitch-preserving beat-lock |
 | **Output Location** | Auto-detects where your songs live and saves mixes alongside them |
 | **Loudness Standards** | Integrated EBU R128 mastering (`-14.0 LUFS`, `-1.5 dBTP`) on any style of music |
 

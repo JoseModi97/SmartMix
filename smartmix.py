@@ -4,10 +4,9 @@
 ==============================================================================
 Runs the entire SmartMix compilation workflow in a SINGLE, UNIFIED PROCESS:
   1. Syncs active Automix queue and Cue points from VirtualDJ
-  2. Compiles the Smart Crossfaded Continuous Mix (LR-4 Bass-Swap, Filter-Sweep, Echo-Out - Zero Scratches)
-  3. Compiles the Normal Cut Continuous Mix (Clean Sequential Cue Drops)
-  4. Applies EBU R128 DJ/Club Loudness Normalization (-14.0 LUFS, -1.5 dBTP)
-  5. Generates full tracklist reports and timestamp markers
+  2. Compiles the Smart Crossfaded Continuous Mix (Gradual Cue 2 to Cue 3 DJ Crossfade)
+  3. Applies EBU R128 DJ/Club Loudness Normalization (-14.0 LUFS, -1.5 dBTP)
+  4. Generates full tracklist reports and timestamp markers
   (Optional: standalone scratch preview only when --with-scratch-preview is passed)
 
 Usage:
@@ -44,15 +43,15 @@ def parse_args():
     parser.add_argument(
         "--crossfade-mode",
         type=str,
-        default="random",
-        choices=["random", "dynamic", "bass-swap", "filter-sweep", "echo-out", "equal-power"],
-        help="Global transition style (default: random, dynamically randomizes bass-swap, filter-sweep, echo-out with zero scratching)"
+        default="gradual",
+        choices=["gradual", "equal-power"],
+        help="Global transition style (default: gradual, smooth Cue 2 to Cue 3 crossfade with LR-4 bass crossover)"
     )
     parser.add_argument(
         "--trans-style",
         type=str,
         default="",
-        help="Per-transition custom styles (e.g. '1=bass-swap,2=filter-sweep,3=echo-out')"
+        help="Per-transition custom styles (e.g. '1=gradual,2=equal-power')"
     )
     parser.add_argument(
         "--trans-bars",
@@ -102,13 +101,6 @@ def parse_args():
         help="Default cue number where fade completes/cuts off (default: 3)"
     )
     parser.add_argument(
-        "--normal-cutoff",
-        type=str,
-        default="cue2",
-        choices=["cue2", "cue3"],
-        help="Where normal cut transition occurs: 'cue2' (radio cutoff) or 'cue3' (full phrase)"
-    )
-    parser.add_argument(
         "--use-last-cues",
         action="store_true",
         help="If track has 4+ cues, automatically use the final 2 cues for the fade-out window"
@@ -123,13 +115,13 @@ def run_all_in_one():
     print("=" * 78)
     print(f"Loudness Target  : {args.target_lufs:.1f} LUFS (Industry DJ/Club Reference)")
     print(f"True Peak Ceiling: {args.true_peak:.1f} dBTP (Inter-Sample Headroom Margin)")
-    print(f"Transition Style : {args.crossfade_mode.upper()} (Zero Scratches - Pure Musical DJ Transitions)")
+    print(f"Transition Style : {args.crossfade_mode.upper()} (Gradual Cue 2 to Cue 3 DJ Crossfade)")
     print("-" * 78)
 
     # -------------------------------------------------------------------------
     # STEP 1: LOAD & VALIDATE PLAYLIST FROM VIRTUALDJ
     # -------------------------------------------------------------------------
-    total_steps = 4 if args.with_scratch_preview else 3
+    total_steps = 3 if args.with_scratch_preview else 2
     print(f"\n[Step 1/{total_steps}] Reading VirtualDJ Automix Queue & Cue Database...")
     tracks = gm.get_track_data(args)
     if not tracks:
@@ -148,14 +140,13 @@ def run_all_in_one():
         print(f"      BPM: {t['bpm']:.1f} | Cues: {cues_count} | Entry: {gm.format_time(t['cue_entry'])} | Fade/Cut: {gm.format_time(t['cue_fade'])} | Outro: {gm.format_time(t['cue_exit'])}")
 
     crossfade_out = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Crossfaded.mp3")
-    normal_out = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Normal.mp3")
     scratch_out = os.path.join(args.output_dir, f"{args.mix_name}_DJ_Scratch_Preview.mp3")
 
     # -------------------------------------------------------------------------
-    # STEP 2: COMPILE SMART CROSSFADED CONTINUOUS MIX (ZERO SCRATCHES)
+    # STEP 2: COMPILE SMART CROSSFADED CONTINUOUS MIX (GRADUAL CUE TRANSITIONS)
     # -------------------------------------------------------------------------
     print("\n" + "=" * 78)
-    print(f" [Step 2/{total_steps}] COMPILING SMART CROSSFADED CONTINUOUS MIX (SMOOTH TRANSITIONS)")
+    print(f" [Step 2/{total_steps}] COMPILING SMART CROSSFADED CONTINUOUS MIX (GRADUAL DJ TRANSITIONS)")
     print("=" * 78)
     args.mode = "crossfade"
     success_cf = gm.render_crossfade_mix(tracks, args, crossfade_out)
@@ -164,23 +155,11 @@ def run_all_in_one():
         return False
 
     # -------------------------------------------------------------------------
-    # STEP 3: COMPILE NORMAL CUT CONTINUOUS MIX
-    # -------------------------------------------------------------------------
-    print("\n" + "=" * 78)
-    print(f" [Step 3/{total_steps}] COMPILING NORMAL CUT CONTINUOUS MIX (CLEAN CUE DROPS)")
-    print("=" * 78)
-    args.mode = "normal"
-    success_nm = gm.render_normal_mix(tracks, args, normal_out)
-    if not success_nm:
-        print("ERROR: Normal cut mix compilation failed!")
-        return False
-
-    # -------------------------------------------------------------------------
-    # STEP 4: (OPTIONAL) STANDALONE SCRATCH PREVIEW
+    # STEP 3: (OPTIONAL) STANDALONE SCRATCH PREVIEW
     # -------------------------------------------------------------------------
     if args.with_scratch_preview:
         print("\n" + "=" * 78)
-        print(f" [Step 4/{total_steps}] COMPILING OPTIONAL STANDALONE SCRATCH PREVIEW")
+        print(f" [Step 3/{total_steps}] COMPILING OPTIONAL STANDALONE SCRATCH PREVIEW")
         print("=" * 78)
         first_track = tracks[0]
         try:
@@ -204,18 +183,16 @@ def run_all_in_one():
     # FINAL SUMMARY REPORT
     # -------------------------------------------------------------------------
     cf_mb = os.path.getsize(crossfade_out) / (1024 * 1024) if os.path.exists(crossfade_out) else 0.0
-    nm_mb = os.path.getsize(normal_out) / (1024 * 1024) if os.path.exists(normal_out) else 0.0
 
     print("\n" + "=" * 78)
-    print(" ALL SMARTMIX CONTINUOUS MIXES SUCCESSFULLY COMPILED!")
+    print(" SMARTMIX CONTINUOUS MIX SUCCESSFULLY COMPILED!")
     print("=" * 78)
-    print(" 1. Smart Crossfaded Mix : " + crossfade_out + f" ({cf_mb:.2f} MB)")
-    print(" 2. Normal Cut Mix       : " + normal_out + f" ({nm_mb:.2f} MB)")
+    print(" Master Mix File         : " + crossfade_out + f" ({cf_mb:.2f} MB)")
     if args.with_scratch_preview and os.path.exists(scratch_out):
         sc_mb = os.path.getsize(scratch_out) / (1024 * 1024)
-        print(" 3. DJ Scratch Preview   : " + scratch_out + f" ({sc_mb:.2f} MB)")
+        print(" DJ Scratch Preview      : " + scratch_out + f" ({sc_mb:.2f} MB)")
     print(f"\n Master Audio Standards  : {args.target_lufs:.1f} LUFS Integrated, Max True Peak {args.true_peak:.1f} dBTP")
-    print(" Transitions Profile     : 100% Smooth Musical DJ Blends (Zero Scratches in continuous mixes)")
+    print(" Transitions Profile     : Gradual Cue 2 to Cue 3 Crossfade (Zero Scratches, Zero Abrupt Cuts)")
     print("=" * 78)
     return True
 

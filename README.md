@@ -6,7 +6,29 @@ Instead of relying on real-time software crossfaders that suffer from volume dip
 
 ---
 
-## ⚡ The 1-Click Master Pipeline (How to Run Everything at Once)
+## 🖥️ SmartMix Studio (Desktop Graphical User Interface)
+
+You can run SmartMix using a sleek, modern dark-themed desktop interface:
+
+### How to Launch:
+* **Option 1 (Double-Click):** Double-click `SmartMix_Studio.bat` in Windows File Explorer.
+* **Option 2 (Terminal):**
+  ```bash
+  python smartmix_gui.py
+  ```
+
+### Key Features of the User Interface:
+1. **Custom Export Name:** Easily set the title or genre for your mix (e.g. `Afrobeats`, `Amapiano`, `Deep House 2026`). Output files are automatically named accordingly.
+2. **Custom Destination Directory:** Click **"📂 Browse..."** to select any folder or drive on your PC. It displays a live preview of the target file path.
+3. **Live VirtualDJ Automix Queue Table:** Displays all queued tracks, BPMs, Cue 1 (In), Cue 2 (Fade Out), Cue 3 (Cut Out), and durations.
+4. **Instant Playlist Reload ("🔄 Reload from VirtualDJ"):** Click to immediately reload track information if you modify the playlist in VirtualDJ.
+5. **Transition & Loudness Controls:** Select transition style (`Gradual Cue 2 -> Cue 3 Crossfade` or `Equal-Power`), loudness target (`-14.0 LUFS`), and true-peak limiter.
+6. **Live Compilation Terminal:** Streams real-time progress, time-stretching, DSP transitions, and EBU R128 mastering logs.
+7. **1-Click Completion Actions:** Instantly click **"📂 Open Export Folder"** or **"▶ Play Mix in Audio Player"** when done.
+
+---
+
+## ⚡ The 1-Click Master Pipeline (Command-Line / Batch)
 
 You can run the **entire mixtape compilation in ONE single step**:
 

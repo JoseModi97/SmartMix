@@ -74,7 +74,19 @@ def main():
         )
         all_ok = False
 
-    # 4. Check FFmpeg Binary & Essential Audio Filters
+    # 4. Check CustomTkinter (Desktop GUI)
+    try:
+        import customtkinter as ctk
+        print_status("CustomTkinter GUI Library", True, f"Version {ctk.__version__} (Desktop UI Ready)")
+    except ImportError:
+        print_status(
+            "CustomTkinter GUI Library",
+            False,
+            "Module 'customtkinter' not found (fallback to basic Tkinter)",
+            "Run 'pip install customtkinter' for modern dark-themed GUI"
+        )
+
+    # 5. Check FFmpeg Binary & Essential Audio Filters
     ffmpeg_ok = False
     filters_ok = False
     try:

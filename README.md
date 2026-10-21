@@ -115,6 +115,32 @@ python smartmix.py --trans-style "1=bass-swap,2=filter-sweep,3=echo-out,4=bass-s
 
 ---
 
+## 🚀 Universal Song & Speed Support (Any Songs, Any Speeds, Any Genre)
+
+SmartMix is **not restricted to a fixed playlist or tempo**:
+
+### 1. Any Songs & Formats
+Whatever audio files you drag into VirtualDJ Automix (MP3, WAV, FLAC, M4A, AAC) from any folder are loaded dynamically. SmartMix reads each track's individual length, BPM, and cue points from VirtualDJ's database.
+
+### 2. How Different Speeds (BPMs) Are Handled:
+- **Option 1: Normal Cut Mix (`--mode normal`):**
+  Works **100% flawlessly across ANY speed or tempo change** (e.g. 80 BPM into 130 BPM). Track A plays to the cue cutoff, cleanly cuts on the beat, and Track B drops on Beat 1 of its intro. Because there is zero overlap, beatgrids never clash!
+- **Option 2: Smart Crossfade Mix (`--mode crossfade`):**
+  - **Same / Similar Tempo ($\Delta\text{BPM} \le 0.5$ BPM):** Seamless 16-bar phrase blending.
+  - **DJ Pitch Range ($0.5 < \Delta\text{BPM} \le 12.0$ BPM):** SmartMix automatically applies pitch-preserving time-stretching (`atempo`) across the 16-bar transition window so incoming Track B locks 1:1 in phase with Track A! Once the blend finishes, Track B smoothly plays at its native speed.
+  - **Large Tempo Shift ($\Delta\text{BPM} > 12.0$ BPM):** SmartMix automatically switches the transition to an **Echo-Out drop**. Track A echoes out over 1-2 beats with a delay freeze, while Track B drops in at its own native tempo on Beat 1 without awkward time-stretching.
+
+### 3. Custom Mix Name & Genre (`--mix-name`)
+You can compile mixes for any genre:
+```bash
+python smartmix.py --mix-name "Afrobeats"
+python smartmix.py --mix-name "House"
+python smartmix.py --mix-name "Dancehall"
+```
+This automatically tags ID3 metadata and names output files accordingly (e.g. `Afrobeats_Continuous_Mix_Crossfaded.mp3`). If omitted, it defaults to `Amapiano`.
+
+---
+
 ## 🔊 Audio Standards & Mastering Engine
 
 Commercial tracks are mastered hot (often peaking near 0 dBFS). Simply blending two tracks during a crossfade would cause up to $+4.9\text{ dBFS}$ clipping and muddy distortion.

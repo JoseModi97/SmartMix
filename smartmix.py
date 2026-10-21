@@ -36,6 +36,12 @@ def parse_args():
         help="Destination directory for all compiled MP3 files (default: auto-detected from source tracks or ~/Downloads/Amapiano)"
     )
     parser.add_argument(
+        "--mix-name",
+        type=str,
+        default="Amapiano",
+        help="Name or genre of the mix (used for output filenames and ID3 tags, e.g. 'Afrobeats', 'House', 'Amapiano')"
+    )
+    parser.add_argument(
         "--crossfade-mode",
         type=str,
         default="dynamic",
@@ -141,9 +147,9 @@ def run_all_in_one():
         print(f"  [{i+1}] {t['artist']} - {t['title']}")
         print(f"      BPM: {t['bpm']:.1f} | Cues: {cues_count} | Entry: {gm.format_time(t['cue_entry'])} | Fade/Cut: {gm.format_time(t['cue_fade'])} | Outro: {gm.format_time(t['cue_exit'])}")
 
-    crossfade_out = os.path.join(args.output_dir, "Amapiano_Continuous_Mix_Crossfaded.mp3")
-    normal_out = os.path.join(args.output_dir, "Amapiano_Continuous_Mix_Normal.mp3")
-    scratch_out = os.path.join(args.output_dir, "Heavy-K_No_Bad_Vibes_DJ_Scratch_Preview.mp3")
+    crossfade_out = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Crossfaded.mp3")
+    normal_out = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Normal.mp3")
+    scratch_out = os.path.join(args.output_dir, f"{args.mix_name}_DJ_Scratch_Preview.mp3")
 
     # -------------------------------------------------------------------------
     # STEP 2: COMPILE SMART CROSSFADED CONTINUOUS MIX (ZERO SCRATCHES)

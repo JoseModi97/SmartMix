@@ -104,6 +104,12 @@ def parse_args():
         default=-1.5,
         help="Maximum True Peak ceiling in dBTP to prevent inter-sample clipping on club sound systems and MP3 encoding (default: -1.5 dBTP)"
     )
+    parser.add_argument(
+        "--mix-name",
+        type=str,
+        default="Amapiano",
+        help="Name or genre of the mix (used for output filenames and ID3 tags, e.g. 'Afrobeats', 'House', 'Amapiano')"
+    )
     parser.add_argument("--entry-cue", type=int, default=1, help="Default cue number to use for song entry/mix-in (default: 1)")
     parser.add_argument("--fade-cue", type=int, default=2, help="Default cue number where fade-out begins / normal cutoff (default: 2)")
     parser.add_argument("--exit-cue", type=int, default=3, help="Default cue number where fade completes/cuts off (default: 3)")
@@ -429,14 +435,15 @@ def render_normal_mix(tracks, args, output_file):
     cmd = ["ffmpeg", "-y"]
     for clip in prepared_clips:
         cmd.extend(["-i", clip])
+    mix_tag = getattr(args, "mix_name", "Amapiano")
     cmd.extend([
         "-filter_complex", concat_filter,
         "-map", "[out]",
         "-b:a", "320k",
-        "-metadata", "album=Amapiano Continuous Mix (Normal)",
-        "-metadata", "title=Amapiano Set (Clean Cut)",
+        "-metadata", f"album={mix_tag} Continuous Mix (Normal)",
+        "-metadata", f"title={mix_tag} Set (Clean Cut)",
         "-metadata", "artist=Various Artists",
-        "-metadata", "genre=Amapiano",
+        "-metadata", f"genre={mix_tag}",
         output_file
     ])
 
@@ -460,6 +467,25 @@ def render_normal_mix(tracks, args, output_file):
     return True
 
 # -----------------------------------------------------------------------------
+# AUDIO LOADER WITH OPTIONAL PITCH-PRESERVING TEMPO MATCHING
+# -----------------------------------------------------------------------------
+
+def load_audio_clip(path, start_s, duration_s=None, end_s=None, sr=44100, tempo_ratio=1.0):
+    cmd = ["ffmpeg", "-y", "-ss", f"{start_s:.3f}"]
+    if duration_s is not None and duration_s > 0:
+        cmd.extend(["-t", f"{duration_s:.3f}"])
+    elif end_s is not None and end_s > start_s:
+        cmd.extend(["-to", f"{end_s:.3f}"])
+    cmd.extend(["-i", path])
+    if abs(tempo_ratio - 1.0) > 0.005:
+        ratio_clamped = max(0.5, min(2.0, tempo_ratio))
+        cmd.extend(["-af", f"atempo={ratio_clamped:.5f}"])
+    cmd.extend(["-f", "s16le", "-ac", "2", "-ar", str(sr), "-"])
+    proc = subprocess.run(cmd, capture_output=True, check=True)
+    raw = np.frombuffer(proc.stdout, dtype=np.int16).astype(np.float32) / 32768.0
+    return raw.reshape(-1, 2)
+
+# -----------------------------------------------------------------------------
 # SMART CROSSFADED MIX (Advanced DSP Transitions)
 # -----------------------------------------------------------------------------
 
@@ -476,24 +502,37 @@ def render_crossfade_mix(tracks, args, output_file):
     trans_modes = []
 
     for i in range(len(tracks) - 1):
-        t = tracks[i]
-        bpm = t["bpm"] or 118.0
-        
-        # Determine duration
+        t_a = tracks[i]
+        t_b = tracks[i + 1]
+        bpm_a = t_a["bpm"] or 118.0
+        bpm_b = t_b["bpm"] or 118.0
+        bpm_diff = abs(bpm_a - bpm_b)
+
+        # Determine duration (phrase-aligned to 16 bars)
         if args.trans_bars is not None and args.trans_bars > 0:
-            fade_dur = args.trans_bars * (60.0 / bpm) * 4.0
-        elif t["cue_fade"] is not None and t["cue_exit"] is not None and t["cue_exit"] > t["cue_fade"]:
-            fade_dur = t["cue_exit"] - t["cue_fade"]
+            fade_dur = args.trans_bars * 4.0 * (60.0 / bpm_a)
+        elif t_a["cue_fade"] is not None and t_a["cue_exit"] is not None and t_a["cue_exit"] > t_a["cue_fade"]:
+            fade_dur = t_a["cue_exit"] - t_a["cue_fade"]
         else:
-            fade_dur = 16.0 * (60.0 / bpm) # Default 16 bars
+            fade_dur = 16.0 * 4.0 * (60.0 / bpm_a)  # Default 16 bars (64 beats)
 
         mode = get_transition_mode(i, args.crossfade_mode, custom_styles)
+        if bpm_diff > 12.0 and i not in custom_styles:
+            # Significant tempo shift across brackets: auto-apply echo-out drop for clean transition
+            mode = "echo-out"
+
         trans_durations.append(fade_dur)
         trans_modes.append(mode)
 
     print("Planned Transitions:")
     for i, (dur, mode) in enumerate(zip(trans_durations, trans_modes)):
-        print(f"  * Transition {i+1} -> {i+2}: {dur:.1f}s ({mode.upper()}) | Tracks: {tracks[i]['title']} -> {tracks[i+1]['title']}")
+        bpm_a = tracks[i]["bpm"] or 118.0
+        bpm_b = tracks[i+1]["bpm"] or 118.0
+        bpm_diff = abs(bpm_a - bpm_b)
+        tempo_note = f" [Tempo Sync: {bpm_b:.1f} -> {bpm_a:.1f} BPM]" if 0.5 < bpm_diff <= 12.0 else ""
+        if bpm_diff > 12.0:
+            tempo_note = f" [Tempo Shift: {bpm_a:.1f} -> {bpm_b:.1f} BPM]"
+        print(f"  * Transition {i+1} -> {i+2}: {dur:.1f}s ({mode.upper()}){tempo_note} | Tracks: {tracks[i]['title']} -> {tracks[i+1]['title']}")
 
     # Load audio clips for each track
     track_buffers = []
@@ -545,21 +584,17 @@ def render_crossfade_mix(tracks, args, output_file):
             master_blocks.append(curr_buf)
             break
 
-        next_buf = track_buffers[i + 1]
         fade_dur = trans_durations[i]
         mode = trans_modes[i]
         n_trans = int(round(sr * fade_dur))
 
-        # Check that buffers are long enough for transition
+        # Check that buffer is long enough for transition
         if len(curr_buf) < n_trans:
             n_trans = len(curr_buf) // 2
-        if len(next_buf) < n_trans:
-            n_trans = min(n_trans, len(next_buf) // 2)
 
         # Split curr_buf into solo part and transition part
         solo_part = curr_buf[:-n_trans]
         a_trans = curr_buf[-n_trans:]
-        b_trans = next_buf[:n_trans]
 
         # Add solo part of current track
         master_blocks.append(solo_part)
@@ -567,15 +602,48 @@ def render_crossfade_mix(tracks, args, output_file):
         timeline_markers.append((current_time_s, t["artist"], t["title"], mode_used))
         current_time_s += len(solo_part) / sr
 
+        # Next track transition buffer (with tempo matching if tempos differ)
+        next_buf = track_buffers[i + 1]
+        bpm_a = tracks[i]["bpm"] or 118.0
+        bpm_b = tracks[i + 1]["bpm"] or 118.0
+        bpm_diff = abs(bpm_a - bpm_b)
+
+        if 0.5 < bpm_diff <= 12.0 and mode != "echo-out":
+            # Apply pitch-preserving tempo sync across the transition window
+            tempo_ratio = bpm_a / bpm_b
+            dur_b_needed = fade_dur / tempo_ratio
+            b_trans = load_audio_clip(
+                tracks[i + 1]["path"],
+                start_s=tracks[i + 1]["cue_entry"],
+                duration_s=dur_b_needed,
+                sr=sr,
+                tempo_ratio=tempo_ratio
+            )
+            if len(b_trans) > len(a_trans):
+                b_trans = b_trans[:len(a_trans)]
+            elif len(b_trans) < len(a_trans):
+                b_trans = np.pad(b_trans, ((0, len(a_trans) - len(b_trans)), (0, 0)))
+            n_consumed = int(round(sr * dur_b_needed))
+            track_buffers[i + 1] = next_buf[n_consumed:]
+        else:
+            if len(next_buf) < n_trans:
+                n_trans = min(n_trans, len(next_buf) // 2)
+                a_trans = a_trans[-n_trans:]
+            b_trans = next_buf[:n_trans]
+            track_buffers[i + 1] = next_buf[n_trans:]
+
         # Apply specific DSP transition blend (smooth musical transitions - no scratching)
         if mode == "bass-swap" or mode == "scratch-in":
             blended = blend_bass_swap(a_trans, b_trans, sr=sr, swap_ratio=args.bass_swap_ratio)
         elif mode == "filter-sweep":
             blended = blend_filter_sweep(a_trans, b_trans, sr=sr)
         elif mode == "echo-out":
-            blended = blend_echo_out(a_trans, b_trans, sr=sr, bpm=t["bpm"] or 118.0)
+            blended = blend_echo_out(a_trans, b_trans, sr=sr, bpm=bpm_a)
         else: # equal-power
             blended = blend_equal_power(a_trans, b_trans)
+
+        master_blocks.append(blended)
+        current_time_s += len(blended) / sr
 
         master_blocks.append(blended)
         current_time_s += len(blended) / sr
@@ -597,15 +665,16 @@ def render_crossfade_mix(tracks, args, output_file):
 
     # Master Output Stage: Apply EBU R128 DJ Loudness Normalization & True Peak Limiting
     print("Mastering to 320k MP3 with EBU R128 DJ Standards (-14.0 LUFS, -1.5 dBTP)...")
+    mix_tag = getattr(args, "mix_name", "Amapiano")
     cmd = [
         "ffmpeg", "-y",
         "-i", temp_master_wav,
         "-af", f"loudnorm=I={args.target_lufs}:TP={args.true_peak}:LRA=10.0",
         "-b:a", "320k",
-        "-metadata", "album=Amapiano Continuous Mix (Smart Crossfaded)",
-        "-metadata", "title=Amapiano Set (Smart Crossfaded)",
+        "-metadata", f"album={mix_tag} Continuous Mix (Smart Crossfaded)",
+        "-metadata", f"title={mix_tag} Set (Smart Crossfaded)",
         "-metadata", "artist=Various Artists",
-        "-metadata", "genre=Amapiano",
+        "-metadata", f"genre={mix_tag}",
         output_file
     ]
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
@@ -634,8 +703,8 @@ def main():
     args.output_dir = resolve_output_dir(args.output_dir, tracks)
     os.makedirs(args.output_dir, exist_ok=True)
 
-    normal_output = os.path.join(args.output_dir, "Amapiano_Continuous_Mix_Normal.mp3")
-    crossfade_output = os.path.join(args.output_dir, "Amapiano_Continuous_Mix_Crossfaded.mp3")
+    normal_output = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Normal.mp3")
+    crossfade_output = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Crossfaded.mp3")
 
     print("=" * 78)
     print(" SMARTMIX: ADVANCED DJ TRANSITION & CONTINUOUS MIXTAPE ENGINE")

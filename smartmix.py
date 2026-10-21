@@ -1,14 +1,14 @@
 """
 ==============================================================================
- SMARTMIX: ALL-IN-ONE MASTER DJ MIXTAPE & COMPILATION PIPELINE
+ SMARTMIX: ALL-IN-ONE MASTER DJ MIXTAPE COMPILATION PIPELINE
 ==============================================================================
 Runs the entire SmartMix compilation workflow in a SINGLE, UNIFIED PROCESS:
   1. Syncs active Automix queue and Cue points from VirtualDJ
-  2. Compiles the Smart Crossfaded Continuous Mix (LR-4 Bass-Swap, Filter-Sweep, Echo-Out, Scratch-In)
+  2. Compiles the Smart Crossfaded Continuous Mix (LR-4 Bass-Swap, Filter-Sweep, Echo-Out - Zero Scratches)
   3. Compiles the Normal Cut Continuous Mix (Clean Sequential Cue Drops)
-  4. Compiles the DJ Scratch Performance Preview (Kenyan / ACID Style)
-  5. Applies EBU R128 DJ/Club Loudness Normalization (-14.0 LUFS, -1.5 dBTP)
-  6. Generates full tracklist reports and timestamp markers
+  4. Applies EBU R128 DJ/Club Loudness Normalization (-14.0 LUFS, -1.5 dBTP)
+  5. Generates full tracklist reports and timestamp markers
+  (Optional: standalone scratch preview only when --with-scratch-preview is passed)
 
 Usage:
   python smartmix.py
@@ -24,30 +24,29 @@ from pathlib import Path
 
 # Import internal compilation modules
 import generate_mixtape as gm
-import generate_scratch_preview as gsp
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="SmartMix: All-In-One Unified DJ Mixtape & Scratch Compiler"
+        description="SmartMix: All-In-One Unified DJ Mixtape Compiler"
     )
     parser.add_argument(
         "--output-dir",
         type=str,
-        default=gm.OUTPUT_DIR,
-        help="Destination directory for all compiled MP3 files"
+        default=None,
+        help="Destination directory for all compiled MP3 files (default: auto-detected from source tracks or ~/Downloads/Amapiano)"
     )
     parser.add_argument(
         "--crossfade-mode",
         type=str,
         default="dynamic",
-        choices=["dynamic", "bass-swap", "filter-sweep", "echo-out", "scratch-in", "equal-power"],
-        help="Global transition style (default: dynamic)"
+        choices=["dynamic", "bass-swap", "filter-sweep", "echo-out", "equal-power"],
+        help="Global transition style (default: dynamic, alternates bass-swap, filter-sweep, echo-out with zero scratching)"
     )
     parser.add_argument(
         "--trans-style",
         type=str,
         default="",
-        help="Per-transition custom styles (e.g. '1=bass-swap,2=filter-sweep,3=scratch-in,4=echo-out')"
+        help="Per-transition custom styles (e.g. '1=bass-swap,2=filter-sweep,3=echo-out')"
     )
     parser.add_argument(
         "--trans-bars",
@@ -74,9 +73,9 @@ def parse_args():
         help="Maximum True Peak ceiling in dBTP (default: -1.5 dBTP)"
     )
     parser.add_argument(
-        "--skip-scratch",
+        "--with-scratch-preview",
         action="store_true",
-        help="Skip rendering the standalone scratch preview"
+        help="Optional: also render a standalone DJ scratch routine on track 1 (default: False, no scratches)"
     )
     parser.add_argument(
         "--entry-cue",
@@ -112,25 +111,29 @@ def parse_args():
 
 def run_all_in_one():
     args = parse_args()
-    os.makedirs(args.output_dir, exist_ok=True)
 
     print("=" * 78)
     print(" SMARTMIX: UNIFIED ALL-IN-ONE DJ COMPILATION MASTER PIPELINE")
     print("=" * 78)
-    print(f"Output Directory : {args.output_dir}")
     print(f"Loudness Target  : {args.target_lufs:.1f} LUFS (Industry DJ/Club Reference)")
     print(f"True Peak Ceiling: {args.true_peak:.1f} dBTP (Inter-Sample Headroom Margin)")
-    print(f"Transition Style : {args.crossfade_mode.upper()}")
+    print(f"Transition Style : {args.crossfade_mode.upper()} (Zero Scratches - Pure Musical DJ Transitions)")
     print("-" * 78)
 
     # -------------------------------------------------------------------------
     # STEP 1: LOAD & VALIDATE PLAYLIST FROM VIRTUALDJ
     # -------------------------------------------------------------------------
-    print("\n[Step 1/4] Reading VirtualDJ Automix Queue & Cue Database...")
+    total_steps = 4 if args.with_scratch_preview else 3
+    print(f"\n[Step 1/{total_steps}] Reading VirtualDJ Automix Queue & Cue Database...")
     tracks = gm.get_track_data(args)
     if not tracks:
         print("ERROR: No valid tracks found in VirtualDJ Automix queue!")
         return False
+
+    # Automatically resolve output directory (dynamic: track location, downloads, or custom)
+    args.output_dir = gm.resolve_output_dir(args.output_dir, tracks)
+    os.makedirs(args.output_dir, exist_ok=True)
+    print(f"Destination Dir  : {args.output_dir}")
 
     print(f"-> Successfully loaded {len(tracks)} tracks from Automix playlist:\n")
     for i, t in enumerate(tracks):
@@ -143,10 +146,10 @@ def run_all_in_one():
     scratch_out = os.path.join(args.output_dir, "Heavy-K_No_Bad_Vibes_DJ_Scratch_Preview.mp3")
 
     # -------------------------------------------------------------------------
-    # STEP 2: COMPILE SMART CROSSFADED CONTINUOUS MIX
+    # STEP 2: COMPILE SMART CROSSFADED CONTINUOUS MIX (ZERO SCRATCHES)
     # -------------------------------------------------------------------------
     print("\n" + "=" * 78)
-    print(" [Step 2/4] COMPILING SMART CROSSFADED CONTINUOUS MIX")
+    print(f" [Step 2/{total_steps}] COMPILING SMART CROSSFADED CONTINUOUS MIX (SMOOTH TRANSITIONS)")
     print("=" * 78)
     args.mode = "crossfade"
     success_cf = gm.render_crossfade_mix(tracks, args, crossfade_out)
@@ -158,7 +161,7 @@ def run_all_in_one():
     # STEP 3: COMPILE NORMAL CUT CONTINUOUS MIX
     # -------------------------------------------------------------------------
     print("\n" + "=" * 78)
-    print(" [Step 3/4] COMPILING NORMAL CUT CONTINUOUS MIX")
+    print(f" [Step 3/{total_steps}] COMPILING NORMAL CUT CONTINUOUS MIX (CLEAN CUE DROPS)")
     print("=" * 78)
     args.mode = "normal"
     success_nm = gm.render_normal_mix(tracks, args, normal_out)
@@ -167,16 +170,14 @@ def run_all_in_one():
         return False
 
     # -------------------------------------------------------------------------
-    # STEP 4: COMPILE DJ SCRATCH PERFORMANCE PREVIEW
+    # STEP 4: (OPTIONAL) STANDALONE SCRATCH PREVIEW
     # -------------------------------------------------------------------------
-    success_sc = True
-    if not args.skip_scratch:
+    if args.with_scratch_preview:
         print("\n" + "=" * 78)
-        print(" [Step 4/4] COMPILING DJ SCRATCH PERFORMANCE PREVIEW")
+        print(f" [Step 4/{total_steps}] COMPILING OPTIONAL STANDALONE SCRATCH PREVIEW")
         print("=" * 78)
         first_track = tracks[0]
         try:
-            # Run scratch compilation script
             cmd_scratch = [
                 sys.executable,
                 os.path.join(os.path.dirname(__file__), "generate_scratch_preview.py"),
@@ -189,9 +190,7 @@ def run_all_in_one():
             ]
             res_sc = subprocess.run(cmd_scratch, capture_output=True, text=True)
             if res_sc.returncode == 0:
-                print(f"-> DJ Scratch Preview Rendered: {scratch_out}")
-            else:
-                print("Notice: Standalone scratch preview skipped (output preserved).")
+                print(f"-> Optional Scratch Preview Rendered: {scratch_out}")
         except Exception as e:
             print(f"Notice on scratch preview: {e}")
 
@@ -200,17 +199,17 @@ def run_all_in_one():
     # -------------------------------------------------------------------------
     cf_mb = os.path.getsize(crossfade_out) / (1024 * 1024) if os.path.exists(crossfade_out) else 0.0
     nm_mb = os.path.getsize(normal_out) / (1024 * 1024) if os.path.exists(normal_out) else 0.0
-    sc_mb = os.path.getsize(scratch_out) / (1024 * 1024) if os.path.exists(scratch_out) else 0.0
 
     print("\n" + "=" * 78)
-    print(" ALL SMARTMIX OUTPUTS SUCCESSFULLY COMPILED IN ONE UNIFIED RUN!")
+    print(" ALL SMARTMIX CONTINUOUS MIXES SUCCESSFULLY COMPILED!")
     print("=" * 78)
     print(" 1. Smart Crossfaded Mix : " + crossfade_out + f" ({cf_mb:.2f} MB)")
     print(" 2. Normal Cut Mix       : " + normal_out + f" ({nm_mb:.2f} MB)")
-    if os.path.exists(scratch_out):
+    if args.with_scratch_preview and os.path.exists(scratch_out):
+        sc_mb = os.path.getsize(scratch_out) / (1024 * 1024)
         print(" 3. DJ Scratch Preview   : " + scratch_out + f" ({sc_mb:.2f} MB)")
     print(f"\n Master Audio Standards  : {args.target_lufs:.1f} LUFS Integrated, Max True Peak {args.true_peak:.1f} dBTP")
-    print(" All files are ready for club playback, car audio, and streaming distribution!")
+    print(" Transitions Profile     : 100% Smooth Musical DJ Blends (Zero Scratches in continuous mixes)")
     print("=" * 78)
     return True
 

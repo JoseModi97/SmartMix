@@ -11,7 +11,9 @@ from scipy.interpolate import PchipInterpolator
 from scipy.io import wavfile
 
 SR = 44100
-DEFAULT_TRACK = Path(r"C:\Users\odhis\Downloads\Amapiano\Heavy-K, DJ Buckz, Nonny D - No Bad Vibes (SPOTISAVER).mp3")
+DEFAULT_TRACK = Path.home() / "Downloads" / "Amapiano" / "Heavy-K, DJ Buckz, Nonny D - No Bad Vibes (SPOTISAVER).mp3"
+if not DEFAULT_TRACK.exists():
+    DEFAULT_TRACK = Path(r"C:\Users\odhis\Downloads\Amapiano\Heavy-K, DJ Buckz, Nonny D - No Bad Vibes (SPOTISAVER).mp3")
 
 
 def ffmpeg(*args):

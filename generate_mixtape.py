@@ -3,13 +3,59 @@ import sys
 import argparse
 import subprocess
 import xml.etree.ElementTree as ET
+from pathlib import Path
 import numpy as np
 from scipy import signal
 from scipy.io import wavfile
 
-VDJ_FOLDER = r"C:\Users\odhis\AppData\Local\VirtualDJ\Sideview\automix.vdjfolder"
-VDJ_DB = r"C:\Users\odhis\AppData\Local\VirtualDJ\database.xml"
-OUTPUT_DIR = r"C:\Users\odhis\Downloads\Amapiano"
+LOCAL_APPDATA = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+VDJ_FOLDER = os.path.join(LOCAL_APPDATA, "VirtualDJ", "Sideview", "automix.vdjfolder")
+VDJ_DB = os.path.join(LOCAL_APPDATA, "VirtualDJ", "database.xml")
+
+# Fallback for explicit legacy paths if present
+if not os.path.exists(VDJ_FOLDER):
+    legacy_folder = r"C:\Users\odhis\AppData\Local\VirtualDJ\Sideview\automix.vdjfolder"
+    if os.path.exists(legacy_folder):
+        VDJ_FOLDER = legacy_folder
+
+if not os.path.exists(VDJ_DB):
+    legacy_db = r"C:\Users\odhis\AppData\Local\VirtualDJ\database.xml"
+    if os.path.exists(legacy_db):
+        VDJ_DB = legacy_db
+
+def resolve_output_dir(requested_dir=None, tracks=None):
+    """
+    Intelligently determines the output directory:
+      1. If user passed a specific non-empty --output-dir, use it.
+      2. If tracks are provided from VirtualDJ, default to the folder containing the source tracks.
+      3. If legacy '~/Downloads/Amapiano' exists, use it.
+      4. Otherwise, fallback to '~/Downloads/SmartMix' or '~/Music/SmartMix'.
+      Always ensures the target directory is automatically created so it never fails.
+    """
+    if requested_dir and requested_dir.strip():
+        out = Path(requested_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        return str(out)
+
+    # 1. Use track source folder if available
+    if tracks and len(tracks) > 0:
+        first_p = tracks[0].get("path")
+        if first_p and os.path.exists(first_p):
+            p_dir = Path(first_p).parent
+            if p_dir.exists():
+                return str(p_dir)
+
+    # 2. Check ~/Downloads/Amapiano
+    user_amapiano = Path.home() / "Downloads" / "Amapiano"
+    if user_amapiano.exists():
+        return str(user_amapiano)
+
+    # 3. Universal fallback: ~/Downloads/SmartMix
+    fallback = Path.home() / "Downloads" / "SmartMix"
+    fallback.mkdir(parents=True, exist_ok=True)
+    return str(fallback)
+
+OUTPUT_DIR = resolve_output_dir()
 
 def parse_args():
     parser = argparse.ArgumentParser(description="SmartMix: Studio-Grade DJ Mixtape & Transition Engine")
@@ -24,14 +70,14 @@ def parse_args():
         "--crossfade-mode",
         type=str,
         default="dynamic",
-        choices=["dynamic", "bass-swap", "filter-sweep", "echo-out", "scratch-in", "equal-power"],
-        help="Global transition style: 'dynamic' (alternates styles), 'bass-swap' (LR-4 low-end crossover), 'filter-sweep' (HPF wash), 'echo-out' (tempo delay freeze), 'scratch-in' (on-beat scratch drop), 'equal-power' (sine blend)"
+        choices=["dynamic", "bass-swap", "filter-sweep", "echo-out", "equal-power"],
+        help="Global transition style: 'dynamic' (alternates styles), 'bass-swap' (LR-4 low-end crossover), 'filter-sweep' (HPF wash), 'echo-out' (tempo delay freeze), 'equal-power' (sine blend)"
     )
     parser.add_argument(
         "--trans-style",
         type=str,
         default="",
-        help="Per-transition custom styles (e.g. '1=bass-swap,2=filter-sweep,3=scratch-in,4=echo-out')"
+        help="Per-transition custom styles (e.g. '1=bass-swap,2=filter-sweep,3=echo-out,4=bass-swap')"
     )
     parser.add_argument(
         "--trans-bars",
@@ -63,7 +109,7 @@ def parse_args():
     parser.add_argument("--exit-cue", type=int, default=3, help="Default cue number where fade completes/cuts off (default: 3)")
     parser.add_argument("--normal-cutoff", type=str, default="cue2", choices=["cue2", "cue3"], help="Where normal cut transition occurs: 'cue2' (radio cutoff) or 'cue3' (full phrase)")
     parser.add_argument("--use-last-cues", action="store_true", help="If track has 4+ cues, automatically use the last 2 cues for the fade-out window")
-    parser.add_argument("--output-dir", type=str, default=OUTPUT_DIR, help="Destination directory for output files")
+    parser.add_argument("--output-dir", type=str, default=None, help="Destination directory for output files (default: auto-detect from playlist tracks, or ~/Downloads/Amapiano)")
     return parser.parse_args()
 
 def extract_cue_points(song_elem, default_entry=1, default_fade=2, default_exit=3, use_last_cues=False):
@@ -204,10 +250,15 @@ def parse_custom_styles(trans_style_str):
 
 def get_transition_mode(idx, global_mode, custom_styles):
     if idx in custom_styles:
-        return custom_styles[idx]
+        mode = custom_styles[idx]
+        if mode == "scratch-in":
+            return "bass-swap"  # strictly no scratches in continuous mixes
+        return mode
+    if global_mode == "scratch-in":
+        return "bass-swap"
     if global_mode != "dynamic":
         return global_mode
-    patterns = ["bass-swap", "filter-sweep", "scratch-in", "echo-out"]
+    patterns = ["bass-swap", "filter-sweep", "echo-out"]
     return patterns[idx % len(patterns)]
 
 # -----------------------------------------------------------------------------
@@ -303,40 +354,10 @@ def blend_echo_out(a_seg, b_seg, sr=44100, bpm=118.0, decay=0.55):
 
 def blend_scratch_in(a_seg, b_seg, sr=44100, bpm=118.0):
     """
-    On-Beat Subtle Scratch Drop.
-    Track A plays up to the final 2 beats, where a subtle baby/chirp scratch
-    scratches Track B's drop note before Track B unleashes on Beat 1!
+    Deprecated: Redirected to smooth Linkwitz-Riley Bass-Swap.
+    Ensures zero scratching sound effects exist in continuous mixes.
     """
-    n = len(a_seg)
-    mid = n // 2
-    beat_s = 60.0 / bpm
-
-    b_stab = b_seg[mid:mid + int(sr * 1.5)].copy()
-    if len(b_stab) < int(sr * 0.5):
-        b_stab = b_seg[:int(sr * 1.5)].copy()
-
-    scratch_dur = beat_s * 2.0
-    n_sc = int(round(sr * scratch_dur))
-    t_sc = np.linspace(0, scratch_dur, n_sc)
-    traj = 0.04 + 0.16 * np.sin(2 * np.pi * (1.0 / beat_s) * t_sc)
-    phase = (t_sc % (beat_s / 2.0)) / (beat_s / 2.0)
-    fader = np.where(phase < 0.70, 1.0, 0.0).astype(np.float32)
-
-    # Scratch resample
-    idx = np.clip(traj * sr, 0, len(b_stab) - 2)
-    fl = np.floor(idx).astype(np.int32)
-    fr = (idx - fl)[:, None]
-    sc_audio = (b_stab[fl] * (1 - fr) + b_stab[fl + 1] * fr) * fader[:, None]
-
-    out = np.zeros_like(a_seg)
-    out[:mid] = a_seg[:mid]
-    fade_len = int(sr * beat_s)
-    out[mid - fade_len:mid] *= np.linspace(1, 0, fade_len)[:, None]
-
-    sc_start = max(0, mid - n_sc)
-    out[sc_start:mid] += sc_audio[:mid - sc_start] * 0.92
-    out[mid:] += b_seg[mid:]
-    return out
+    return blend_bass_swap(a_seg, b_seg, sr=sr, swap_ratio=0.5)
 
 def blend_equal_power(a_seg, b_seg):
     """Equal-Power quarter-sine crossfade"""
@@ -546,15 +567,13 @@ def render_crossfade_mix(tracks, args, output_file):
         timeline_markers.append((current_time_s, t["artist"], t["title"], mode_used))
         current_time_s += len(solo_part) / sr
 
-        # Apply specific DSP transition blend
-        if mode == "bass-swap":
+        # Apply specific DSP transition blend (smooth musical transitions - no scratching)
+        if mode == "bass-swap" or mode == "scratch-in":
             blended = blend_bass_swap(a_trans, b_trans, sr=sr, swap_ratio=args.bass_swap_ratio)
         elif mode == "filter-sweep":
             blended = blend_filter_sweep(a_trans, b_trans, sr=sr)
         elif mode == "echo-out":
             blended = blend_echo_out(a_trans, b_trans, sr=sr, bpm=t["bpm"] or 118.0)
-        elif mode == "scratch-in":
-            blended = blend_scratch_in(a_trans, b_trans, sr=sr, bpm=t["bpm"] or 118.0)
         else: # equal-power
             blended = blend_equal_power(a_trans, b_trans)
 
@@ -605,12 +624,15 @@ def render_crossfade_mix(tracks, args, output_file):
 
 def main():
     args = parse_args()
-    os.makedirs(args.output_dir, exist_ok=True)
 
     tracks = get_track_data(args)
     if not tracks:
         print("No valid tracks found to mix.")
         return
+
+    # Automatically resolve output directory (from track directory or user folder)
+    args.output_dir = resolve_output_dir(args.output_dir, tracks)
+    os.makedirs(args.output_dir, exist_ok=True)
 
     normal_output = os.path.join(args.output_dir, "Amapiano_Continuous_Mix_Normal.mp3")
     crossfade_output = os.path.join(args.output_dir, "Amapiano_Continuous_Mix_Crossfaded.mp3")

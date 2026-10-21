@@ -117,10 +117,10 @@ python smartmix.py --trans-style "1=bass-swap,2=filter-sweep,3=echo-out,4=bass-s
 
 ## 🚀 Universal Song & Speed Support (Any Songs, Any Speeds, Any Genre)
 
-SmartMix is **not restricted to a fixed playlist or tempo**:
+SmartMix is **not restricted to a fixed playlist, tempo, or genre**:
 
-### 1. Any Songs & Formats
-Whatever audio files you drag into VirtualDJ Automix (MP3, WAV, FLAC, M4A, AAC) from any folder are loaded dynamically. SmartMix reads each track's individual length, BPM, and cue points from VirtualDJ's database.
+### 1. Any Songs & Audio Formats
+Whatever audio files you drag into VirtualDJ Automix (MP3, WAV, FLAC, M4A, AAC) from any folder or drive are loaded dynamically. SmartMix reads each track's individual length, BPM, and cue points from VirtualDJ's database.
 
 ### 2. How Different Speeds (BPMs) Are Handled:
 - **Option 1: Normal Cut Mix (`--mode normal`):**
@@ -138,6 +138,19 @@ python smartmix.py --mix-name "House"
 python smartmix.py --mix-name "Dancehall"
 ```
 This automatically tags ID3 metadata and names output files accordingly (e.g. `Afrobeats_Continuous_Mix_Crossfaded.mp3`). If omitted, it defaults to `Amapiano`.
+
+### 4. Summary Capability Matrix
+
+| Feature | Behavior with Other Songs & Speeds |
+| :--- | :--- |
+| **Track List** | Completely dynamic (whatever songs are in VirtualDJ Automix) |
+| **Song Lengths** | Completely dynamic (uses each track's individual duration & cues) |
+| **BPM / Speed** | Auto-detected per song; tempo-matched during crossfades |
+| **Normal Cut Transitions** | 100% speed-agnostic; cuts on beat 4, drops on beat 1 with zero overlap |
+| **Crossfade Transitions** | Automatic phase-lock time-stretching within mixable range ($\le 12$ BPM) |
+| **Large Tempo Jumps** | Auto-routes to Echo-Out drop or Normal Cut to prevent trainwrecks |
+| **Output Location** | Auto-detects where your songs live and saves mixes alongside them |
+| **Loudness Standards** | Integrated EBU R128 mastering (`-14.0 LUFS`, `-1.5 dBTP`) on any style of music |
 
 ---
 
@@ -160,6 +173,7 @@ SmartMix applies broadcast-grade mastering:
 | Argument | Default | Description |
 | :--- | :---: | :--- |
 | `--output-dir` | *Auto-detected* | Folder where compiled MP3s will be saved (defaults to track directory or `~/Downloads/Amapiano`) |
+| `--mix-name` | `Amapiano` | Name or genre of the mix (used for output filenames and ID3 tags, e.g. `'Afrobeats'`, `'House'`) |
 | `--crossfade-mode` | `dynamic` | Transition style: `dynamic`, `bass-swap`, `filter-sweep`, `echo-out`, `equal-power` |
 | `--trans-style` | `""` | Per-transition map (e.g. `'1=bass-swap,2=filter-sweep,3=echo-out'`) |
 | `--trans-bars` | *Cue markers* | Force transition length in bars (e.g. `8`, `16`, `32`) |
@@ -177,17 +191,20 @@ SmartMix applies broadcast-grade mastering:
 
 ## ❓ Frequently Asked Questions & Troubleshooting
 
-### Q1: What if my songs are not in `C:\Users\odhis\Downloads\Amapiano\`?
+### Q1: Is this script tailored only for a specific set of songs, or will it work with other songs and different speeds?
+- **It works for ANY songs and ANY speeds!** SmartMix is not hardcoded to any artist, genre, or speed:
+  - **Different Speeds in Normal Cut Mode (`--mode normal`):** 100% speed-agnostic. You can mix 80 BPM into 130 BPM with zero clash because each song plays at its natural tempo and drops on beat 1 without overlap.
+  - **Different Speeds in Crossfade Mode (`--mode crossfade`):** Within DJ mixable pitch range ($\le 12$ BPM difference), SmartMix automatically time-stretches incoming tracks during the 16-bar blend window using pitch-neutral `atempo` so kicks lock 1:1 in phase. If there is a massive tempo jump ($> 12$ BPM), it automatically routes to an **Echo-Out Drop** transition.
+  - **Different Genres:** Pass `--mix-name "Afrobeats"`, `--mix-name "House"`, etc., to customize tags and filenames.
+
+### Q2: What if my songs are not in `C:\Users\odhis\Downloads\Amapiano\`?
 - SmartMix automatically detects the folder where your audio files live and outputs the mixes there! If your tracks are in `D:\DJ_Music\` or `C:\Users\YourName\Music\`, your mixes will automatically be placed there. You can also specify any custom folder with `--output-dir "D:\MyMixes"`.
 
-### Q2: Why are there no scratches in the continuous mixes?
+### Q3: Why are there no scratches in the continuous mixes?
 - Continuous DJ mixtapes are designed for seamless musical blends. Scratches were removed from the mix transitions to ensure smooth, uninterrupted listening with Linkwitz-Riley bass swaps, filter sweeps, and echo outs. If you want a standalone scratch performance routine, pass `--with-scratch-preview`.
 
-### Q3: What if a song does not have Cue 2 or Cue 3 set?
+### Q4: What if a song does not have Cue 2 or Cue 3 set?
 - Don't worry! If Cue 2 or Cue 3 are missing, SmartMix automatically calculates an intelligent 16-bar fade window based on the song's BPM before the end of the track.
-
-### Q4: What if my songs have different tempos (BPM)?
-- SmartMix has a built-in pitch-neutral time-stretching engine (**RubberBand / WSOLA**). If two consecutive tracks differ in tempo by more than 0.3 BPM, it automatically time-stretches the transition window so beats stay locked in phase without altering pitch.
 
 ### Q5: How do I render ONLY the crossfaded mix or ONLY the normal mix?
 - If you only want one specific mix, use `generate_mixtape.py`:

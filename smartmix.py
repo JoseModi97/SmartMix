@@ -76,8 +76,8 @@ def parse_args():
     parser.add_argument(
         "--bass-swap-ratio",
         type=float,
-        default=0.5,
-        help="Ratio within transition where low-end swaps (default: 0.5 = midpoint)"
+        default=0.68,
+        help="Ratio within transition where low-end swaps (default: 0.68)"
     )
     parser.add_argument(
         "--target-lufs",

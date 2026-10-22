@@ -106,8 +106,8 @@ def parse_args():
     parser.add_argument(
         "--bass-swap-ratio",
         type=float,
-        default=0.5,
-        help="Position within transition where low-end swaps (default: 0.5 = midpoint, e.g. bar 8 of 16)"
+        default=0.68,
+        help="Position within transition where low-end swaps (default: 0.68 = hands over in late phase of Cue 2 to Cue 3 window)"
     )
     # Professional DJ / Streaming Loudness Standards (EBU R128 / ITU-R BS.1770)
     parser.add_argument(
@@ -310,24 +310,34 @@ def get_transition_mode(idx, global_mode, custom_styles, last_mode=None):
 # ADVANCED DSP TRANSITION BLENDERS
 # -----------------------------------------------------------------------------
 
-def blend_gradual(a_seg, b_seg, sr=44100):
+def blend_gradual(a_seg, b_seg, sr=44100, bass_swap_ratio=0.68):
     """
     Studio-Grade Gradual DJ Crossfade between Cue 2 and Cue 3.
-    Track A gradually fades out from 100% down to 0% (cosine equal-power curve).
-    Track B gradually fades in from 0% up to 100% (sine equal-power curve).
-    Linkwitz-Riley 4th Order (LR-4) zero-phase crossover at 220 Hz smoothly
-    swaps low-end frequencies across the midpoint so kicks and sub-bass never
-    clash or cause volume dips, while mids and vocals blend seamlessly.
+    Preserves outgoing music (Track A) presence and musicality across the
+    full distance between Cue 2 and Cue 3:
+      - Track A stays prominent across 75%+ of the transition window, smoothly
+        rolling off in the final stretch to Cue 3 instead of muting early.
+      - Track B introduces progressively and takes command smoothly.
+      - Linkwitz-Riley 4th Order (LR-4) zero-phase crossover at 200 Hz maintains
+        the outgoing bass groove through the transition, handing over to Track B's
+        bass near the golden ratio point (~68%) so kicks/sub-bass never clash or cut abruptly.
     """
     n = min(len(a_seg), len(b_seg))
     a_seg = a_seg[:n]
     b_seg = b_seg[:n]
 
-    t = np.linspace(0, 1, n)
-    cos_curve = np.cos(t * np.pi * 0.5)[:, None]
-    sin_curve = np.sin(t * np.pi * 0.5)[:, None]
+    t = np.linspace(0.0, 1.0, n)
 
-    fc = 220.0
+    # Outgoing curve: hold presence for the first ~35% of the Cue 2 -> Cue 3 distance,
+    # then smoothly and musically taper down towards Cue 3 so it stays clearly audible
+    t_fade_a = np.clip((t - 0.35) / 0.65, 0.0, 1.0)
+    curve_a = (np.cos(t_fade_a * (np.pi * 0.5)) ** 0.85)[:, None]
+
+    # Incoming curve: smoothly ramp up to full energy across the transition
+    t_fade_b = np.clip(t / 0.85, 0.0, 1.0)
+    curve_b = np.sin(t_fade_b * (np.pi * 0.5))[:, None]
+
+    fc = 200.0
     b_l, a_l = signal.butter(2, fc, btype='low', fs=sr)
     b_h, a_h = signal.butter(2, fc, btype='high', fs=sr)
 
@@ -336,12 +346,12 @@ def blend_gradual(a_seg, b_seg, sr=44100):
     b_low = signal.filtfilt(b_l, a_l, b_seg, axis=0)
     b_high = signal.filtfilt(b_h, a_h, b_seg, axis=0)
 
-    # Mids & highs crossfade smoothly across the entire cue window
-    high_blend = a_high * cos_curve + b_high * sin_curve
+    # Mids & highs crossfade: Track A stays audible throughout
+    high_blend = a_high * curve_a + b_high * curve_b
 
-    # Lows swap smoothly across the midpoint of the transition
-    swap_center = n // 2
-    half_w = max(int(round(sr * 0.75)), 1)  # 1.5s musical bass handover window
+    # Lows swap: outgoing track's bass drives through ~68% of the cue distance
+    swap_center = int(n * min(0.85, max(0.4, bass_swap_ratio)))
+    half_w = max(int(round(sr * 1.0)), 1)  # 2.0s musical handover window
     s_start = max(0, swap_center - half_w)
     s_end = min(n, swap_center + half_w)
 
@@ -351,23 +361,25 @@ def blend_gradual(a_seg, b_seg, sr=44100):
     swap_len = s_end - s_start
     if swap_len > 0:
         ramp = np.linspace(0.0, 1.0, swap_len)
-        low_env_a[s_start:s_end] = np.cos(ramp * np.pi * 0.5)
+        low_env_a[s_start:s_end] = np.cos(ramp * (np.pi * 0.5))
         low_env_a[s_end:] = 0.0
-        low_env_b[s_start:s_end] = np.sin(ramp * np.pi * 0.5)
+        low_env_b[s_start:s_end] = np.sin(ramp * (np.pi * 0.5))
         low_env_b[s_end:] = 1.0
 
     low_blend = a_low * low_env_a[:, None] + b_low * low_env_b[:, None]
     return high_blend + low_blend
 
 def blend_equal_power(a_seg, b_seg):
-    """Pure mathematical equal-power crossfade (no frequency split)."""
+    """Mathematical equal-power crossfade tuned for natural DJ transitions."""
     n = min(len(a_seg), len(b_seg))
     a_seg = a_seg[:n]
     b_seg = b_seg[:n]
-    t = np.linspace(0, 1, n)
-    cos_curve = np.cos(t * np.pi * 0.5)[:, None]
-    sin_curve = np.sin(t * np.pi * 0.5)[:, None]
-    return a_seg * cos_curve + b_seg * sin_curve
+    t = np.linspace(0.0, 1.0, n)
+    t_fade_a = np.clip((t - 0.35) / 0.65, 0.0, 1.0)
+    curve_a = (np.cos(t_fade_a * (np.pi * 0.5)) ** 0.85)[:, None]
+    t_fade_b = np.clip(t / 0.85, 0.0, 1.0)
+    curve_b = np.sin(t_fade_b * (np.pi * 0.5))[:, None]
+    return a_seg * curve_a + b_seg * curve_b
 
 # -----------------------------------------------------------------------------
 # NORMAL CUT MIX (Sequential Clean Drops)
@@ -602,7 +614,12 @@ def render_crossfade_mix(tracks, args, output_file):
         if mode == "equal-power":
             blended = blend_equal_power(a_trans, b_trans)
         else:
-            blended = blend_gradual(a_trans, b_trans, sr=sr)
+            blended = blend_gradual(
+                a_trans,
+                b_trans,
+                sr=sr,
+                bass_swap_ratio=getattr(args, "bass_swap_ratio", 0.68)
+            )
 
         # Mark Track B entry on the mixtape timeline
         timeline_markers.append((current_time_s, t_b["artist"], t_b["title"], mode))

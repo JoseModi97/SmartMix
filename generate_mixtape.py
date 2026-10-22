@@ -505,6 +505,23 @@ def render_normal_mix(tracks, args, output_file):
 # AUDIO LOADER WITH OPTIONAL PITCH-PRESERVING TEMPO MATCHING
 # -----------------------------------------------------------------------------
 
+def compute_tempo_ratio(bpm_outgoing, bpm_incoming):
+    """
+    Computes pitch-preserving tempo stretch ratio so the incoming track
+    exact-matches the outgoing track's BPM during the crossfade transition.
+    Also handles double-time / half-time detection (e.g. 70 vs 140 bpm).
+    """
+    if not bpm_outgoing or not bpm_incoming or bpm_outgoing <= 0 or bpm_incoming <= 0:
+        return 1.0
+
+    ratio = bpm_outgoing / bpm_incoming
+    if ratio > 1.6:
+        ratio /= 2.0
+    elif ratio < 0.65:
+        ratio *= 2.0
+
+    return max(0.80, min(1.25, ratio))
+
 def load_audio_clip(path, start_s, duration_s=None, end_s=None, sr=44100, tempo_ratio=1.0):
     cmd = ["ffmpeg", "-y", "-ss", f"{start_s:.3f}"]
     if duration_s is not None and duration_s > 0:
@@ -512,7 +529,7 @@ def load_audio_clip(path, start_s, duration_s=None, end_s=None, sr=44100, tempo_
     elif end_s is not None and end_s > start_s:
         cmd.extend(["-to", f"{end_s:.3f}"])
     cmd.extend(["-i", path])
-    if abs(tempo_ratio - 1.0) > 0.005:
+    if abs(tempo_ratio - 1.0) > 0.0005:
         ratio_clamped = max(0.5, min(2.0, tempo_ratio))
         cmd.extend(["-af", f"atempo={ratio_clamped:.5f}"])
     cmd.extend(["-f", "s16le", "-ac", "2", "-ar", str(sr), "-"])
@@ -543,14 +560,22 @@ def render_crossfade_mix(tracks, args, output_file):
         bpm_b = t_b["bpm"] or 118.0
 
         # Transition duration strictly determined by Cue 2 (fade) to Cue 3 (exit/cut)
-        if args.trans_bars is not None and args.trans_bars > 0:
+        has_fade = t_a["cue_fade"] is not None
+        has_exit = t_a["cue_exit"] is not None
+        if has_fade and has_exit and (t_a["cue_exit"] <= t_a["cue_fade"] + 0.1):
+            # When Cue 2 and Cue 3 are at the same level/position: IMMEDIATE CUT
+            fade_dur = 0.0
+            mode = "immediate"
+        elif args.trans_bars is not None and args.trans_bars > 0:
             fade_dur = args.trans_bars * 4.0 * (60.0 / bpm_a)
-        elif t_a["cue_fade"] is not None and t_a["cue_exit"] is not None and t_a["cue_exit"] > t_a["cue_fade"]:
+            mode = get_transition_mode(i, args.crossfade_mode, custom_styles)
+        elif has_fade and has_exit and t_a["cue_exit"] > t_a["cue_fade"]:
             fade_dur = t_a["cue_exit"] - t_a["cue_fade"]
+            mode = get_transition_mode(i, args.crossfade_mode, custom_styles)
         else:
             fade_dur = 16.0 * 4.0 * (60.0 / bpm_a)  # Default 16 bars (64 beats)
+            mode = get_transition_mode(i, args.crossfade_mode, custom_styles)
 
-        mode = get_transition_mode(i, args.crossfade_mode, custom_styles)
         trans_durations.append(fade_dur)
         trans_modes.append(mode)
 
@@ -558,11 +583,12 @@ def render_crossfade_mix(tracks, args, output_file):
     for i, (dur, mode) in enumerate(zip(trans_durations, trans_modes)):
         bpm_a = tracks[i]["bpm"] or 118.0
         bpm_b = tracks[i+1]["bpm"] or 118.0
-        bpm_diff = abs(bpm_a - bpm_b)
-        tempo_note = f" [Tempo Sync: {bpm_b:.1f} -> {bpm_a:.1f} BPM]" if 0.5 < bpm_diff <= 12.0 else ""
-        if bpm_diff > 12.0:
-            tempo_note = f" [Tempo Shift: {bpm_a:.1f} -> {bpm_b:.1f} BPM]"
-        print(f"  * Transition {i+1} -> {i+2}: {dur:.1f}s ({mode.upper()}){tempo_note} | Tracks: {tracks[i]['title']} -> {tracks[i+1]['title']}")
+        if mode == "immediate":
+            print(f"  * Transition {i+1} -> {i+2}: IMMEDIATE CUT (Cue 2 == Cue 3) | Tracks: {tracks[i]['title']} -> {tracks[i+1]['title']}")
+        else:
+            t_ratio = compute_tempo_ratio(bpm_a, bpm_b)
+            tempo_note = f" [Tempo Sync: {bpm_b:.1f} -> {bpm_a:.1f} BPM]" if abs(t_ratio - 1.0) > 0.0005 else ""
+            print(f"  * Transition {i+1} -> {i+2}: {dur:.1f}s ({mode.upper()}){tempo_note} | Tracks: {tracks[i]['title']} -> {tracks[i+1]['title']}")
 
     # Assemble master audio with DSP transitions
     timeline_markers = []
@@ -591,19 +617,26 @@ def render_crossfade_mix(tracks, args, output_file):
         solo_dur = max(0.0, fade_start - curr_in_pos)
         if solo_dur > 0.02:
             solo_audio = load_audio_clip(t_a["path"], start_s=curr_in_pos, duration_s=solo_dur, sr=sr)
+            if mode == "immediate":
+                # Micro-fadeout (15ms) prevents digital click on immediate cuts
+                fade_out_samples = min(int(sr * 0.015), len(solo_audio))
+                if fade_out_samples > 0:
+                    solo_audio[-fade_out_samples:] *= np.linspace(1.0, 0.0, fade_out_samples)[:, None]
             master_blocks.append(solo_audio)
             current_time_s += len(solo_audio) / sr
+
+        # If immediate transition (Cue 2 == Cue 3), cut directly to Track B
+        b_entry = t_b["cue_entry"]
+        if mode == "immediate" or fade_dur <= 0.05:
+            timeline_markers.append((current_time_s, t_b["artist"], t_b["title"], "immediate cut"))
+            curr_in_pos = b_entry
+            continue
 
         # 2. Gradual Crossfade Transition Window: Cue 2 to Cue 3
         # Track A fades out over fade_dur
         a_trans = load_audio_clip(t_a["path"], start_s=fade_start, duration_s=fade_dur, sr=sr)
-
-        # Track B enters at its cue_entry and fades in over fade_dur
-        b_entry = t_b["cue_entry"]
-        bpm_diff = abs(bpm_a - bpm_b)
-
-        if 0.5 < bpm_diff <= 12.0:
-            tempo_ratio = bpm_a / bpm_b
+        tempo_ratio = compute_tempo_ratio(bpm_a, bpm_b)
+        if abs(tempo_ratio - 1.0) > 0.0005:
             dur_b_needed = fade_dur * tempo_ratio
             b_trans = load_audio_clip(
                 t_b["path"],

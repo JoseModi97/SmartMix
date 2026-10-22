@@ -216,20 +216,20 @@ class SmartMixApp:
         col_mode.pack(side="left", fill="x", expand=True, padx=6)
         if ctk:
             ctk.CTkLabel(col_mode, text="Transition Mode:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w")
-            self.mode_var = tk.StringVar(value="Gradual DJ Crossfade (Cue 2 -> Cue 3)")
+            self.mode_var = tk.StringVar(value="Both (Normal & Crossfaded)")
             self.mode_var.trace_add("write", lambda *args: self._update_preview_path())
             self.opt_mode = ctk.CTkOptionMenu(
                 col_mode,
                 values=[
-                    "Gradual DJ Crossfade (Cue 2 -> Cue 3)",
-                    "Normal Transition (Clean Cut, Zero Overlap)",
-                    "Both (Normal & Crossfaded)"
+                    "Both (Normal & Crossfaded)",
+                    "Normal Transition (Hear Out to Cue 3)",
+                    "Gradual DJ Crossfade (Cue 2 -> Cue 3)"
                 ],
                 variable=self.mode_var
             )
             self.opt_mode.pack(fill="x", pady=4)
         else:
-            self.mode_var = tk.StringVar(value="Gradual DJ Crossfade (Cue 2 -> Cue 3)")
+            self.mode_var = tk.StringVar(value="Both (Normal & Crossfaded)")
 
         # Target Loudness
         col_loud = ctk.CTkFrame(opts_row, fg_color="transparent") if ctk else tk.Frame(opts_row)
@@ -480,13 +480,13 @@ class SmartMixApp:
         elif "-2.0" in raw_tp:
             true_peak = -2.0
 
-        mode_str = self.mode_var.get() if hasattr(self, "mode_var") else "Normal"
-        if "Crossfade" in mode_str:
+        mode_str = self.mode_var.get() if hasattr(self, "mode_var") else "Both"
+        if "Both" in mode_str:
+            target_mode = "both"
+            suffix = "Crossfaded"
+        elif "Crossfade" in mode_str:
             target_mode = "crossfade"
             suffix = "Crossfaded"
-        elif "Both" in mode_str:
-            target_mode = "both"
-            suffix = "Normal"
         else:
             target_mode = "normal"
             suffix = "Normal"

@@ -43,16 +43,16 @@ def parse_args():
     parser.add_argument(
         "--mode",
         type=str,
-        default="crossfade",
-        choices=["crossfade", "normal", "both"],
-        help="Transition mode: 'crossfade' (default: gradual crossfade with bass crossover), 'normal' (clean cut), or 'both'"
+        default="both",
+        choices=["both", "normal", "crossfade"],
+        help="Transition mode: 'both' (default: renders both Normal and Crossfaded mixes), 'normal' (clean cue transitions to Cue 3), or 'crossfade' (gradual crossfade)"
     )
     parser.add_argument(
         "--normal-cutoff",
         type=str,
-        default="cue2",
-        choices=["cue2", "cue3"],
-        help="Where normal cut transition occurs: 'cue2' (radio cutoff) or 'cue3' (full phrase)"
+        default="cue3",
+        choices=["cue3", "cue2"],
+        help="Where normal transition cutoff occurs: 'cue3' (default: hear out full transition phrase to Cue 3) or 'cue2' (cutoff at Cue 2)"
     )
     parser.add_argument(
         "--crossfade-mode",
@@ -215,15 +215,15 @@ def run_all_in_one():
     print("=" * 78)
     if args.mode in ("normal", "both") and os.path.exists(normal_out):
         nm_mb = os.path.getsize(normal_out) / (1024 * 1024)
-        print(" 1. Normal Cut Mix (Zero Overlap): " + normal_out + f" ({nm_mb:.2f} MB)")
+        print(" 1. Normal Transition Mix (Hear Out to Cue 3): " + normal_out + f" ({nm_mb:.2f} MB)")
     if args.mode in ("crossfade", "both") and os.path.exists(crossfade_out):
         cf_mb = os.path.getsize(crossfade_out) / (1024 * 1024)
-        print(" 2. Crossfaded Mix (Gradual Blend): " + crossfade_out + f" ({cf_mb:.2f} MB)")
+        print(" 2. Crossfaded Mix (Gradual Blend):            " + crossfade_out + f" ({cf_mb:.2f} MB)")
     if args.with_scratch_preview and os.path.exists(scratch_out):
         sc_mb = os.path.getsize(scratch_out) / (1024 * 1024)
-        print(" 3. DJ Scratch Preview           : " + scratch_out + f" ({sc_mb:.2f} MB)")
+        print(" 3. DJ Scratch Preview                         : " + scratch_out + f" ({sc_mb:.2f} MB)")
     print(f"\n Master Audio Standards  : {args.target_lufs:.1f} LUFS Integrated, Max True Peak {args.true_peak:.1f} dBTP")
-    print(f" Transition Profile      : {'Clean On-Beat Cue Drops (Zero Overlapping Crossfade)' if args.mode == 'normal' else 'Gradual Cue 2 -> Cue 3 DJ Crossfade'}")
+    print(f" Transition Profile      : {'Both (Normal Outro + Gradual Crossfade)' if args.mode == 'both' else 'Clean On-Beat Cue Drops to Cue 3' if args.mode == 'normal' else 'Gradual Cue 2 -> Cue 3 DJ Crossfade'}")
     print("=" * 78)
     return True
 

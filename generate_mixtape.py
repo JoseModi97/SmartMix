@@ -80,9 +80,9 @@ def parse_args():
     parser.add_argument(
         "--mode",
         type=str,
-        default="crossfade",
-        choices=["crossfade", "normal", "both"],
-        help="Rendering mode: 'crossfade' (default: gradual cue transitions with bass crossover), 'normal' (clean cue-drop cuts), or 'both'"
+        default="both",
+        choices=["both", "normal", "crossfade"],
+        help="Rendering mode: 'both' (default: renders both normal and crossfade mixes), 'normal' (clean cue transitions to Cue 3), or 'crossfade' (gradual cue transitions)"
     )
     parser.add_argument(
         "--crossfade-mode",
@@ -125,13 +125,19 @@ def parse_args():
     parser.add_argument(
         "--mix-name",
         type=str,
-        default="Amapiano",
+        default=None,
         help="Name or genre of the mix (used for output filenames and ID3 tags, e.g. 'Afrobeats', 'House', 'Amapiano')"
     )
     parser.add_argument("--entry-cue", type=int, default=1, help="Default cue number to use for song entry/mix-in (default: 1)")
     parser.add_argument("--fade-cue", type=int, default=2, help="Default cue number where fade-out begins / normal cutoff (default: 2)")
     parser.add_argument("--exit-cue", type=int, default=3, help="Default cue number where fade completes/cuts off (default: 3)")
-    parser.add_argument("--normal-cutoff", type=str, default="cue2", choices=["cue2", "cue3"], help="Where normal cut transition occurs: 'cue2' (radio cutoff) or 'cue3' (full phrase)")
+    parser.add_argument(
+        "--normal-cutoff",
+        type=str,
+        default="cue3",
+        choices=["cue3", "cue2"],
+        help="Where normal transition cutoff occurs: 'cue3' (default: hear out full transition phrase to Cue 3) or 'cue2' (cutoff at Cue 2)"
+    )
     parser.add_argument("--use-last-cues", action="store_true", help="If track has 4+ cues, automatically use the last 2 cues for the fade-out window")
     parser.add_argument("--output-dir", type=str, default=None, help="Destination directory for output files (default: auto-detect from playlist tracks, or ~/Downloads/Amapiano)")
     return parser.parse_args()
@@ -310,16 +316,16 @@ def get_transition_mode(idx, global_mode, custom_styles, last_mode=None):
 # ADVANCED DSP TRANSITION BLENDERS
 # -----------------------------------------------------------------------------
 
-def blend_gradual(a_seg, b_seg, sr=44100, bass_swap_ratio=0.68, initial_b_gain=0.65):
+def blend_gradual(a_seg, b_seg, sr=44100, bass_swap_ratio=0.68, initial_b_gain=0.65, pre_fade_gain=0.88):
     """
     Studio-Grade Gradual DJ Crossfade between Cue 2 and Cue 3.
     Provides confident, audible presence for both incoming and outgoing tracks:
+      - Outgoing Track (Track A) smoothly dips slightly before Cue 2 (~0.88) to create
+        natural acoustic breathing room, grooving firmly across the main transition phrase,
+        before gently tapering out into Cue 3.
       - Incoming Track (Track B) drops in immediately loud and clear (gain ~0.65)
         so listeners can instantly hear and appreciate the new song entering,
         smoothly ramping up to full volume across the transition.
-      - Outgoing Track (Track A) stays full-bodied across the main phrase of the
-        transition, letting the listener enjoy both songs grooving together before
-        Track A gently tapers out into Cue 3.
       - Linkwitz-Riley 4th Order (LR-4) zero-phase crossover at 200 Hz maintains
         groove and cleanly hands over low-end bass energy near the 68% mark.
     """
@@ -330,10 +336,11 @@ def blend_gradual(a_seg, b_seg, sr=44100, bass_swap_ratio=0.68, initial_b_gain=0
     t = np.linspace(0.0, 1.0, n)
 
     # Outgoing curve (Track A):
-    # Maintains presence for the first ~30% of the transition distance,
+    # Starts at pre_fade_gain (0.88) to match the pre-Cue 2 dip seamlessly,
+    # maintains presence for the first ~30% of the transition distance,
     # then smoothly rolls off towards Cue 3 so it remains audible together with Track B
     t_fade_a = np.clip((t - 0.30) / 0.70, 0.0, 1.0)
-    curve_a = (np.cos(t_fade_a * (np.pi * 0.5)) ** 0.85)[:, None]
+    curve_a = (pre_fade_gain * (np.cos(t_fade_a * (np.pi * 0.5)) ** 0.85))[:, None]
 
     # Incoming curve (Track B):
     # Enters audibly at initial_b_gain (default: 0.65 = -3.7 dB) with a 25ms anti-pop micro-ramp,
@@ -380,14 +387,14 @@ def blend_gradual(a_seg, b_seg, sr=44100, bass_swap_ratio=0.68, initial_b_gain=0
     low_blend = a_low * low_env_a[:, None] + b_low * low_env_b[:, None]
     return high_blend + low_blend
 
-def blend_equal_power(a_seg, b_seg, initial_b_gain=0.65):
+def blend_equal_power(a_seg, b_seg, initial_b_gain=0.65, pre_fade_gain=0.88):
     """Mathematical equal-power crossfade tuned for punchy, audible DJ transitions."""
     n = min(len(a_seg), len(b_seg))
     a_seg = a_seg[:n]
     b_seg = b_seg[:n]
     t = np.linspace(0.0, 1.0, n)
     t_fade_a = np.clip((t - 0.30) / 0.70, 0.0, 1.0)
-    curve_a = (np.cos(t_fade_a * (np.pi * 0.5)) ** 0.85)[:, None]
+    curve_a = (pre_fade_gain * (np.cos(t_fade_a * (np.pi * 0.5)) ** 0.85))[:, None]
     
     ramp_samples = min(int(44100 * 0.025), max(1, n // 10))
     micro_in = np.ones(n, dtype=np.float32)
@@ -423,12 +430,14 @@ def render_normal_mix(tracks, args, output_file):
 
         start_time = t["cue_entry"]
 
-        cutoff_pref = getattr(args, "normal_cutoff", "cue2")
+        cutoff_pref = getattr(args, "normal_cutoff", "cue3")
         if is_last:
             if cutoff_pref == "cue2" and t["cue_fade"] is not None and t["cue_fade"] > start_time:
                 end_time = t["cue_fade"]
             elif t["cue_exit"] is not None and t["cue_exit"] > start_time:
                 end_time = t["cue_exit"]
+            elif t["cue_fade"] is not None and t["cue_fade"] > start_time:
+                end_time = t["cue_fade"]
             else:
                 end_time = t["length"]
         else:
@@ -497,8 +506,19 @@ def render_normal_mix(tracks, args, output_file):
     print(f"-> Normal Mix Rendered: {output_file} ({out_size_mb:.2f} MB)")
     print(f"   [Loudness Target: {args.target_lufs} LUFS | True Peak Ceiling: {args.true_peak} dBTP]")
     print("Normal Mix Timeline:")
+    tracklist_lines = []
     for mark_time, artist, title in timeline_markers:
-        print(f" [{format_time(mark_time)}] {artist} - {title}")
+        line_str = f" [{format_time(mark_time)}] {artist} - {title}"
+        print(line_str)
+        tracklist_lines.append(line_str)
+    
+    txt_path = os.path.splitext(output_file)[0] + "_Tracklist.txt"
+    try:
+        with open(txt_path, "w", encoding="utf-8") as f:
+            f.write(f"SmartMix Continuous Mix (Normal Clean Cut)\nTarget: {args.target_lufs} LUFS\n\nTracklist:\n")
+            f.write("\n".join(tracklist_lines))
+    except Exception:
+        pass
     return True
 
 # -----------------------------------------------------------------------------
@@ -622,6 +642,14 @@ def render_crossfade_mix(tracks, args, output_file):
                 fade_out_samples = min(int(sr * 0.015), len(solo_audio))
                 if fade_out_samples > 0:
                     solo_audio[-fade_out_samples:] *= np.linspace(1.0, 0.0, fade_out_samples)[:, None]
+            else:
+                # Slight volume down slightly before outgoing Cue 2 (~1.5s window down to 0.88)
+                # Gives natural breathing room for incoming Track B to drop in audibly without clashing
+                dip_samples = min(int(sr * 1.5), max(1, len(solo_audio) // 3))
+                if dip_samples > 10:
+                    t_dip = np.linspace(0.0, 1.0, dip_samples)
+                    dip_curve = 1.0 - (1.0 - 0.88) * (0.5 - 0.5 * np.cos(t_dip * np.pi))
+                    solo_audio[-dip_samples:] *= dip_curve[:, None]
             master_blocks.append(solo_audio)
             current_time_s += len(solo_audio) / sr
 
@@ -739,9 +767,20 @@ def render_crossfade_mix(tracks, args, output_file):
     print(f"-> Crossfaded Mix Rendered: {output_file} ({out_size_mb:.2f} MB)")
     print(f"   [Loudness Target: {args.target_lufs} LUFS | True Peak Ceiling: {args.true_peak} dBTP]")
     print("Crossfaded Mix Timeline:")
+    cf_tracklist_lines = []
     for mark_time, artist, title, trans in timeline_markers:
         trans_str = f" [Crossfade: {trans}]" if trans else ""
-        print(f" [{format_time(mark_time)}] {artist} - {title}{trans_str}")
+        line_str = f" [{format_time(mark_time)}] {artist} - {title}{trans_str}"
+        print(line_str)
+        cf_tracklist_lines.append(line_str)
+    
+    txt_path = os.path.splitext(output_file)[0] + "_Tracklist.txt"
+    try:
+        with open(txt_path, "w", encoding="utf-8") as f:
+            f.write(f"SmartMix Continuous Mix (Smart Crossfaded)\nTarget: {args.target_lufs} LUFS\n\nTracklist:\n")
+            f.write("\n".join(cf_tracklist_lines))
+    except Exception:
+        pass
     return True
 
 def main():

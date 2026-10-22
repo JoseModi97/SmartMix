@@ -115,13 +115,13 @@ class SmartMixApp:
         lbl_name = ctk.CTkLabel(name_row, text="Mix Title / Genre:", width=140, anchor="w", font=ctk.CTkFont(weight="bold")) if ctk else tk.Label(name_row, text="Mix Title:")
         lbl_name.pack(side="left")
 
-        self.mix_name_var = tk.StringVar(value="Amapiano")
+        self.mix_name_var = tk.StringVar(value="")
         self.mix_name_var.trace_add("write", lambda *args: self._update_preview_path())
 
         self.entry_name = ctk.CTkEntry(
             name_row,
             textvariable=self.mix_name_var,
-            placeholder_text="e.g. Amapiano, Afrobeats 2026, Club Mix",
+            placeholder_text="Auto-detected from folder (e.g. Y2K, Amapiano, Afrobeats)",
             width=320
         ) if ctk else tk.Entry(name_row, textvariable=self.mix_name_var, width=30)
         self.entry_name.pack(side="left", padx=10, fill="x", expand=True)
@@ -216,20 +216,20 @@ class SmartMixApp:
         col_mode.pack(side="left", fill="x", expand=True, padx=6)
         if ctk:
             ctk.CTkLabel(col_mode, text="Transition Mode:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w")
-            self.mode_var = tk.StringVar(value="Normal Transition (Clean Cut, Zero Overlap)")
+            self.mode_var = tk.StringVar(value="Gradual DJ Crossfade (Cue 2 -> Cue 3)")
             self.mode_var.trace_add("write", lambda *args: self._update_preview_path())
             self.opt_mode = ctk.CTkOptionMenu(
                 col_mode,
                 values=[
-                    "Normal Transition (Clean Cut, Zero Overlap)",
                     "Gradual DJ Crossfade (Cue 2 -> Cue 3)",
+                    "Normal Transition (Clean Cut, Zero Overlap)",
                     "Both (Normal & Crossfaded)"
                 ],
                 variable=self.mode_var
             )
             self.opt_mode.pack(fill="x", pady=4)
         else:
-            self.mode_var = tk.StringVar(value="Normal Transition (Clean Cut, Zero Overlap)")
+            self.mode_var = tk.StringVar(value="Gradual DJ Crossfade (Cue 2 -> Cue 3)")
 
         # Target Loudness
         col_loud = ctk.CTkFrame(opts_row, fg_color="transparent") if ctk else tk.Frame(opts_row)
@@ -361,9 +361,11 @@ class SmartMixApp:
         return frame
 
     def _update_preview_path(self):
-        mix_name = (self.mix_name_var.get() or "Amapiano").strip()
+        curr_name = (self.mix_name_var.get() or "").strip()
+        tracks = getattr(self, "tracks", None)
+        mix_name = gm.resolve_mix_name(curr_name, tracks)
         dest_dir = self.dest_var.get().strip() or str(Path.home() / "Downloads")
-        mode_val = self.mode_var.get() if hasattr(self, "mode_var") else "Normal"
+        mode_val = self.mode_var.get() if hasattr(self, "mode_var") else "Crossfade"
         if "Crossfade" in mode_val:
             suffix = "Crossfaded"
         elif "Both" in mode_val:
@@ -394,11 +396,15 @@ class SmartMixApp:
             tracks = gm.get_track_data(DummyArgs())
             self.tracks = tracks
 
-            # Auto-populate destination directory from track location if present
+            # Auto-populate destination directory and mix name from track location if present
             if tracks and len(tracks) > 0 and tracks[0].get("path"):
                 p_dir = str(Path(tracks[0]["path"]).parent)
                 if os.path.exists(p_dir):
                     self.dest_var.set(p_dir)
+                detected = gm.resolve_mix_name(None, tracks)
+                curr = self.mix_name_var.get().strip()
+                if not curr or curr in ("Amapiano", "Mixtape"):
+                    self.mix_name_var.set(detected)
 
             self.table_box.configure(state="normal") if ctk else None
             self.table_box.delete("1.0", "end")
@@ -453,7 +459,8 @@ class SmartMixApp:
         if self.is_compiling:
             return
 
-        mix_name = (self.mix_name_var.get() or "Amapiano").strip()
+        curr_name = (self.mix_name_var.get() or "").strip()
+        mix_name = gm.resolve_mix_name(curr_name, getattr(self, "tracks", None))
         dest_dir = self.dest_var.get().strip() or str(Path.home() / "Downloads")
         os.makedirs(dest_dir, exist_ok=True)
 

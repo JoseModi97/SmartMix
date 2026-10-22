@@ -58,14 +58,31 @@ def resolve_output_dir(requested_dir=None, tracks=None):
 
 OUTPUT_DIR = resolve_output_dir()
 
+def resolve_mix_name(requested_name=None, tracks=None):
+    """
+    Intelligently determines the mix title / genre:
+      1. If user passed a specific non-empty --mix-name (other than default Amapiano), use it.
+      2. If tracks are provided from VirtualDJ, inspect parent folder (e.g. 'y2k' -> 'Y2K', 'HipHop' -> 'HipHop').
+      3. Fallback to requested_name or 'Mixtape'.
+    """
+    if requested_name and requested_name.strip() and requested_name.strip().lower() != "amapiano":
+        return requested_name.strip()
+    if tracks and len(tracks) > 0:
+        first_p = tracks[0].get("path")
+        if first_p:
+            parent = Path(first_p).parent.name
+            if parent and parent.lower() not in ("downloads", "music", "desktop", ""):
+                return parent.upper() if len(parent) <= 4 else parent.replace(" ", "_")
+    return requested_name.strip() if requested_name and requested_name.strip() else "Mixtape"
+
 def parse_args():
     parser = argparse.ArgumentParser(description="SmartMix: Studio-Grade DJ Mixtape & Transition Engine")
     parser.add_argument(
         "--mode",
         type=str,
-        default="normal",
-        choices=["normal", "crossfade", "both"],
-        help="Rendering mode: 'normal' (default: clean cue-drop cuts, zero crossfade), 'crossfade' (gradual cue transitions), or 'both'"
+        default="crossfade",
+        choices=["crossfade", "normal", "both"],
+        help="Rendering mode: 'crossfade' (default: gradual cue transitions with bass crossover), 'normal' (clean cue-drop cuts), or 'both'"
     )
     parser.add_argument(
         "--crossfade-mode",
@@ -669,6 +686,7 @@ def main():
     # Automatically resolve output directory (from track directory or user folder)
     args.output_dir = resolve_output_dir(args.output_dir, tracks)
     os.makedirs(args.output_dir, exist_ok=True)
+    args.mix_name = resolve_mix_name(args.mix_name, tracks)
 
     normal_output = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Normal.mp3")
     crossfade_output = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Crossfaded.mp3")

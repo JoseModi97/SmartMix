@@ -37,15 +37,15 @@ def parse_args():
     parser.add_argument(
         "--mix-name",
         type=str,
-        default="Amapiano",
-        help="Name or genre of the mix (used for output filenames and ID3 tags, e.g. 'Afrobeats', 'House', 'Amapiano')"
+        default=None,
+        help="Name or genre of the mix (default: auto-detected from track folder, e.g. 'Y2K', 'Amapiano')"
     )
     parser.add_argument(
         "--mode",
         type=str,
-        default="normal",
-        choices=["normal", "crossfade", "both"],
-        help="Transition mode: 'normal' (default: clean cue-drop cut transition, zero crossfade), 'crossfade' (gradual crossfade), or 'both'"
+        default="crossfade",
+        choices=["crossfade", "normal", "both"],
+        help="Transition mode: 'crossfade' (default: gradual crossfade with bass crossover), 'normal' (clean cut), or 'both'"
     )
     parser.add_argument(
         "--normal-cutoff",
@@ -141,9 +141,11 @@ def run_all_in_one():
         print("ERROR: No valid tracks found in VirtualDJ Automix queue!")
         return False
 
-    # Automatically resolve output directory (dynamic: track location, downloads, or custom)
+    # Automatically resolve output directory and mix name/genre
     args.output_dir = gm.resolve_output_dir(args.output_dir, tracks)
     os.makedirs(args.output_dir, exist_ok=True)
+    args.mix_name = gm.resolve_mix_name(args.mix_name, tracks)
+    print(f"Mix Title/Genre  : {args.mix_name}")
     print(f"Destination Dir  : {args.output_dir}")
 
     print(f"-> Successfully loaded {len(tracks)} tracks from Automix playlist:\n")

@@ -407,115 +407,246 @@ def blend_equal_power(a_seg, b_seg, initial_b_gain=0.65, pre_fade_gain=0.88):
     gain_corr = np.where(sum_energy > 1.05, 1.0 / (sum_energy ** 0.5), 1.0)
     return (a_seg * curve_a + b_seg * curve_b) * gain_corr
 
+def blend_filter_sweep(a_seg, b_seg, sr=44100, initial_b_gain=0.65, pre_fade_gain=0.88):
+    """Dynamic High-Pass Filter sweep: progressively washes out Track A lows/mids as Track B drops in."""
+    n = min(len(a_seg), len(b_seg))
+    a_seg = a_seg[:n]
+    b_seg = b_seg[:n]
+    q = max(1, n // 4)
+    cutoffs = [80.0, 300.0, 900.0, 2400.0]
+    a_filtered = np.zeros_like(a_seg)
+    for idx in range(4):
+        s_idx = idx * q
+        e_idx = (idx + 1) * q if idx < 3 else n
+        chunk = a_seg[s_idx:e_idx]
+        b_hp, a_hp = signal.butter(2, cutoffs[idx], btype='high', fs=sr)
+        a_filtered[s_idx:e_idx] = signal.filtfilt(b_hp, a_hp, chunk, axis=0)
+
+    t = np.linspace(0.0, 1.0, n)
+    t_fade_a = np.clip((t - 0.20) / 0.80, 0.0, 1.0)
+    a_env = (pre_fade_gain * ((1.0 - t_fade_a) ** 1.8))[:, None]
+
+    ramp_samples = min(int(sr * 0.025), max(1, n // 10))
+    micro_in = np.ones(n, dtype=np.float32)
+    if ramp_samples > 0:
+        micro_in[:ramp_samples] = np.linspace(0.0, 1.0, ramp_samples)
+    b_level = initial_b_gain + (1.0 - initial_b_gain) * np.sin(t * (np.pi * 0.5))
+    b_env = (b_level * micro_in)[:, None]
+
+    sum_energy = np.sqrt(a_env ** 2 + b_env ** 2)
+    gain_corr = np.where(sum_energy > 1.05, 1.0 / (sum_energy ** 0.5), 1.0)
+    return (a_filtered * a_env + b_seg * b_env) * gain_corr
+
+def blend_echo_out(a_seg, b_seg, sr=44100, bpm=118.0, decay=0.55, initial_b_gain=0.70):
+    """Tempo-synced 1-beat dub echo freeze: Track A echoes out dissolving under Track B's clean drop."""
+    n = min(len(a_seg), len(b_seg))
+    a_seg = a_seg[:n]
+    b_seg = b_seg[:n]
+    mid = n // 2
+    beat_s = 60.0 / (bpm if bpm > 0 else 118.0)
+    delay_samp = max(1, int(round(sr * beat_s)))
+
+    a_echoed = np.zeros_like(a_seg)
+    a_echoed[:mid] = a_seg[:mid]
+
+    tail_source = a_seg[max(0, mid - delay_samp):mid]
+    if len(tail_source) > 0:
+        for rep in range(1, 6):
+            s = mid + (rep - 1) * delay_samp
+            e = min(n, s + len(tail_source))
+            if s < n:
+                a_echoed[s:e] += tail_source[:e - s] * (decay ** rep)
+
+    b_out = np.zeros_like(b_seg)
+    b_out[mid:] = b_seg[mid:]
+    ramp_samples = min(int(sr * 0.025), n - mid)
+    if ramp_samples > 0:
+        b_out[mid:mid+ramp_samples] *= np.linspace(0.0, 1.0, ramp_samples)[:, None]
+
+    return np.clip(a_echoed + b_out, -1.0, 1.0)
+
+def blend_no_crossfade(a_seg, b_seg, sr=44100):
+    """
+    Combines Track A and Track B across the Cue 2 -> Cue 3 transition window
+    WITHOUT crossfading or volume ducking:
+      - Both tracks play at full, natural presence across the entire transition.
+      - 15ms anti-pop micro-fades at the extreme boundaries eliminate digital clicks.
+      - 0.7071 equal-power scaling maintains constant 0 dB acoustic energy without clipping.
+    """
+    n = min(len(a_seg), len(b_seg))
+    a_seg = a_seg[:n]
+    b_seg = b_seg[:n]
+
+    micro_len = min(int(sr * 0.015), max(1, n // 10))
+    a_env = np.ones(n, dtype=np.float32)
+    b_env = np.ones(n, dtype=np.float32)
+
+    if micro_len > 0:
+        a_env[-micro_len:] = np.linspace(1.0, 0.0, micro_len)
+        b_env[:micro_len] = np.linspace(0.0, 1.0, micro_len)
+
+    blended = (a_seg * a_env[:, None] + b_seg * b_env[:, None]) * 0.7071
+    return blended
+
 # -----------------------------------------------------------------------------
-# NORMAL CUT MIX (Sequential Clean Drops)
+# NORMAL TRANSITION MIX (Cue 2 -> Cue 3 Transition, Zero Crossfade Ducking)
 # -----------------------------------------------------------------------------
 
 def render_normal_mix(tracks, args, output_file):
     print("\n" + "-" * 78)
-    print(" RENDERING NORMAL MIX (Clean Drop, EBU R128 DJ Loudness Normalization)...")
+    print(" RENDERING NORMAL MIX (Cue 2 -> Cue 3 Transition, Zero Crossfade Ducking)...")
     print("-" * 78)
 
-    temp_dir = os.path.join(args.output_dir, "_temp_normal_parts")
-    os.makedirs(temp_dir, exist_ok=True)
-
-    prepared_clips = []
+    sr = 44100
     timeline_markers = []
-    current_time = 0.0
+    master_blocks = []
+    current_time_s = 0.0
 
-    for i, t in enumerate(tracks):
-        is_last = (i == len(tracks) - 1)
-        in_file = t["path"]
-        out_clip = os.path.join(temp_dir, f"norm_clip_{i:02d}.wav")
+    timeline_markers.append((current_time_s, tracks[0]["artist"], tracks[0]["title"], None))
+    curr_in_pos = tracks[0]["cue_entry"]
 
-        start_time = t["cue_entry"]
+    for i in range(len(tracks) - 1):
+        t_a = tracks[i]
+        t_b = tracks[i + 1]
+        bpm_a = t_a["bpm"] or 118.0
+        bpm_b = t_b["bpm"] or 118.0
 
-        cutoff_pref = getattr(args, "normal_cutoff", "cue3")
-        if is_last:
-            if cutoff_pref == "cue2" and t["cue_fade"] is not None and t["cue_fade"] > start_time:
-                end_time = t["cue_fade"]
-            elif t["cue_exit"] is not None and t["cue_exit"] > start_time:
-                end_time = t["cue_exit"]
-            elif t["cue_fade"] is not None and t["cue_fade"] > start_time:
-                end_time = t["cue_fade"]
-            else:
-                end_time = t["length"]
+        has_fade = t_a["cue_fade"] is not None
+        has_exit = t_a["cue_exit"] is not None
+
+        if has_fade and has_exit and (t_a["cue_exit"] <= t_a["cue_fade"] + 0.1):
+            fade_dur = 0.0
+            is_immediate = True
+        elif has_fade and has_exit and t_a["cue_exit"] > t_a["cue_fade"]:
+            fade_dur = t_a["cue_exit"] - t_a["cue_fade"]
+            is_immediate = False
         else:
-            if cutoff_pref == "cue3" and t["cue_exit"] is not None and t["cue_exit"] > start_time:
-                end_time = t["cue_exit"]
-            elif t["cue_fade"] is not None and t["cue_fade"] > start_time:
-                end_time = t["cue_fade"]
-            elif t["cue_exit"] is not None and t["cue_exit"] > start_time:
-                end_time = t["cue_exit"]
-            else:
-                end_time = t["length"] - 2.0
+            fade_dur = 16.0 * 4.0 * (60.0 / bpm_a)
+            is_immediate = False
 
-        duration = max(0.1, end_time - start_time)
+        if has_fade and t_a["cue_fade"] > curr_in_pos:
+            fade_start = t_a["cue_fade"]
+        else:
+            fade_start = max(curr_in_pos, (t_a["length"] or 180.0) - fade_dur)
 
-        af_filters = (
-            "aformat=sample_fmts=s16:sample_rates=44100:channel_layouts=stereo,"
-            f"afade=t=in:st=0:d=0.015,afade=t=out:st={max(0.0, duration - 0.02):.3f}:d=0.02"
-        )
-        if is_last:
-            af_filters += f",afade=t=out:st={max(0.0, duration - 4.0):.3f}:d=4.0"
+        # 1. Track A Solo Section: from curr_in_pos up to Cue 2 (fade_start)
+        solo_dur = max(0.0, fade_start - curr_in_pos)
+        if solo_dur > 0.02:
+            solo_audio = load_audio_clip(t_a["path"], start_s=curr_in_pos, duration_s=solo_dur, sr=sr)
+            if is_immediate:
+                fade_out_samples = min(int(sr * 0.015), len(solo_audio))
+                if fade_out_samples > 0:
+                    solo_audio[-fade_out_samples:] *= np.linspace(1.0, 0.0, fade_out_samples)[:, None]
+            master_blocks.append(solo_audio)
+            current_time_s += len(solo_audio) / sr
 
-        cmd = [
-            "ffmpeg", "-y",
-            "-ss", f"{start_time:.3f}",
-            "-to", f"{end_time:.3f}",
-            "-i", in_file,
-            "-af", af_filters,
-            out_clip
-        ]
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-        prepared_clips.append(out_clip)
+        # If immediate transition (Cue 2 == Cue 3), cut directly to Track B
+        b_entry = t_b["cue_entry"]
+        if is_immediate or fade_dur <= 0.05:
+            timeline_markers.append((current_time_s, t_b["artist"], t_b["title"], "immediate cut"))
+            curr_in_pos = b_entry
+            continue
 
-        timeline_markers.append((current_time, t["artist"], t["title"]))
-        current_time += duration
+        # 2. Transition Window: Cue 2 to Cue 3 (Zero Crossfade, both tracks groove naturally)
+        a_trans = load_audio_clip(t_a["path"], start_s=fade_start, duration_s=fade_dur, sr=sr)
+        tempo_ratio = compute_tempo_ratio(bpm_a, bpm_b)
+        if abs(tempo_ratio - 1.0) > 0.0005:
+            dur_b_needed = fade_dur * tempo_ratio
+            b_trans = load_audio_clip(
+                t_b["path"],
+                start_s=b_entry,
+                duration_s=dur_b_needed,
+                sr=sr,
+                tempo_ratio=tempo_ratio
+            )
+        else:
+            dur_b_needed = fade_dur
+            b_trans = load_audio_clip(
+                t_b["path"],
+                start_s=b_entry,
+                duration_s=fade_dur,
+                sr=sr,
+                tempo_ratio=1.0
+            )
 
-    filter_inputs = "".join([f"[{idx}:a]" for idx in range(len(prepared_clips))])
-    concat_filter = f"{filter_inputs}concat=n={len(prepared_clips)}:v=0:a=1,loudnorm=I={args.target_lufs}:TP={args.true_peak}:LRA=10.0[out]"
+        target_len = len(a_trans)
+        if len(b_trans) > target_len:
+            b_trans = b_trans[:target_len]
+        elif len(b_trans) < target_len:
+            b_trans = np.pad(b_trans, ((0, target_len - len(b_trans)), (0, 0)))
 
-    cmd = ["ffmpeg", "-y"]
-    for clip in prepared_clips:
-        cmd.extend(["-i", clip])
+        # Blend transition without crossfade: both tracks play at full natural presence!
+        blended = blend_no_crossfade(a_trans, b_trans, sr=sr)
+
+        timeline_markers.append((current_time_s, t_b["artist"], t_b["title"], "no crossfade (Cue 2->3)"))
+        master_blocks.append(blended)
+        current_time_s += len(blended) / sr
+
+        curr_in_pos = b_entry + dur_b_needed
+
+    # 3. Final Track Solo Section
+    last_t = tracks[-1]
+    if last_t["cue_exit"] is not None and last_t["cue_exit"] > curr_in_pos:
+        last_end = last_t["cue_exit"]
+    elif last_t["cue_fade"] is not None and last_t["cue_fade"] > curr_in_pos:
+        last_end = last_t["cue_fade"]
+    else:
+        last_end = last_t["length"]
+
+    if last_end <= curr_in_pos:
+        last_end = last_t["length"]
+
+    last_dur = max(0.1, last_end - curr_in_pos)
+    last_audio = load_audio_clip(last_t["path"], start_s=curr_in_pos, duration_s=last_dur, sr=sr)
+
+    fade_out_len = min(int(sr * 4.0), len(last_audio))
+    if fade_out_len > 0:
+        last_audio[-fade_out_len:] *= np.linspace(1.0, 0.0, fade_out_len)[:, None]
+
+    master_blocks.append(last_audio)
+    current_time_s += len(last_audio) / sr
+
+    # Concatenate master audio
+    print("\nConcatenating master audio stream...")
+    full_audio = np.concatenate(master_blocks, axis=0)
+
+    # Write temporary WAV for loudness normalization
+    temp_master_wav = os.path.join(args.output_dir, "_temp_normal_master.wav")
+    wavfile.write(temp_master_wav, sr, (np.clip(full_audio, -1.0, 1.0) * 32767).astype(np.int16))
+
+    print("Mastering to 320k MP3 with EBU R128 DJ Standards (-14.0 LUFS, -1.5 dBTP)...")
     mix_tag = getattr(args, "mix_name", "Amapiano")
-    cmd.extend([
-        "-filter_complex", concat_filter,
-        "-map", "[out]",
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", temp_master_wav,
+        "-af", f"loudnorm=I={args.target_lufs}:TP={args.true_peak}:LRA=10.0",
         "-b:a", "320k",
         "-metadata", f"album={mix_tag} Continuous Mix (Normal)",
-        "-metadata", f"title={mix_tag} Set (Clean Cut)",
+        "-metadata", f"title={mix_tag} Set (Normal Transition, No Crossfade)",
         "-metadata", "artist=Various Artists",
         "-metadata", f"genre={mix_tag}",
         output_file
-    ])
+    ]
+    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
-    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    if res.returncode != 0:
-        print("FFmpeg error:", res.stderr)
-        return False
-
-    for clip in prepared_clips:
-        try:
-            os.remove(clip)
-        except OSError:
-            pass
+    if os.path.exists(temp_master_wav):
+        os.remove(temp_master_wav)
 
     out_size_mb = os.path.getsize(output_file) / (1024 * 1024)
     print(f"-> Normal Mix Rendered: {output_file} ({out_size_mb:.2f} MB)")
     print(f"   [Loudness Target: {args.target_lufs} LUFS | True Peak Ceiling: {args.true_peak} dBTP]")
     print("Normal Mix Timeline:")
     tracklist_lines = []
-    for mark_time, artist, title in timeline_markers:
-        line_str = f" [{format_time(mark_time)}] {artist} - {title}"
+    for mark_time, artist, title, trans in timeline_markers:
+        trans_str = f" [{trans}]" if trans else ""
+        line_str = f" [{format_time(mark_time)}] {artist} - {title}{trans_str}"
         print(line_str)
         tracklist_lines.append(line_str)
-    
+
     txt_path = os.path.splitext(output_file)[0] + "_Tracklist.txt"
     try:
         with open(txt_path, "w", encoding="utf-8") as f:
-            f.write(f"SmartMix Continuous Mix (Normal Clean Cut)\nTarget: {args.target_lufs} LUFS\n\nTracklist:\n")
+            f.write(f"SmartMix Continuous Mix (Normal Transition, No Crossfade)\nTarget: {args.target_lufs} LUFS\n\nTracklist:\n")
             f.write("\n".join(tracklist_lines))
     except Exception:
         pass
@@ -660,7 +791,21 @@ def render_crossfade_mix(tracks, args, output_file):
             curr_in_pos = b_entry
             continue
 
-        # 2. Gradual Crossfade Transition Window: Cue 2 to Cue 3
+        if mode == "normal":
+            # Normal Transition: Track A plays out its full transition/outro (to Cue 3), then Track B drops in at b_entry with zero overlap
+            outro_dur = max(0.0, fade_dur)
+            if outro_dur > 0.02:
+                outro_audio = load_audio_clip(t_a["path"], start_s=fade_start, duration_s=outro_dur, sr=sr)
+                fade_out_samples = min(int(sr * 0.015), len(outro_audio))
+                if fade_out_samples > 0:
+                    outro_audio[-fade_out_samples:] *= np.linspace(1.0, 0.0, fade_out_samples)[:, None]
+                master_blocks.append(outro_audio)
+                current_time_s += len(outro_audio) / sr
+            timeline_markers.append((current_time_s, t_b["artist"], t_b["title"], "normal cut"))
+            curr_in_pos = b_entry
+            continue
+
+        # 2. Crossfade Transition Window: Cue 2 to Cue 3
         # Track A fades out over fade_dur
         a_trans = load_audio_clip(t_a["path"], start_s=fade_start, duration_s=fade_dur, sr=sr)
         tempo_ratio = compute_tempo_ratio(bpm_a, bpm_b)
@@ -690,10 +835,14 @@ def render_crossfade_mix(tracks, args, output_file):
         elif len(b_trans) < target_len:
             b_trans = np.pad(b_trans, ((0, target_len - len(b_trans)), (0, 0)))
 
-        # Blend transition using gradual DJ crossfader
-        if mode == "equal-power":
+        # Blend transition using selected DSP mode
+        if mode == "filter-sweep":
+            blended = blend_filter_sweep(a_trans, b_trans, sr=sr)
+        elif mode == "echo-out":
+            blended = blend_echo_out(a_trans, b_trans, sr=sr, bpm=bpm_a)
+        elif mode == "equal-power":
             blended = blend_equal_power(a_trans, b_trans)
-        else:
+        else: # gradual
             blended = blend_gradual(
                 a_trans,
                 b_trans,
@@ -782,6 +931,89 @@ def render_crossfade_mix(tracks, args, output_file):
     except Exception:
         pass
     return True
+
+# -----------------------------------------------------------------------------
+# REAL-TIME TRANSITION AUDITION PREVIEW ENGINE (SmartMix Studio)
+# -----------------------------------------------------------------------------
+
+def render_transition_preview(t_a, t_b, mode="gradual", pre_s=3.0, post_s=3.0, sr=44100, bass_swap_ratio=0.68):
+    """
+    Renders an instant preview clip (float32 stereo array) for a single transition
+    between Track A and Track B using the specified mode.
+    Takes ~0.2s, perfectly suited for real-time audition in SmartMix Studio.
+    """
+    bpm_a = t_a.get("bpm") or 118.0
+    bpm_b = t_b.get("bpm") or 118.0
+    cue_fade = t_a.get("cue_fade")
+    cue_exit = t_a.get("cue_exit")
+    b_entry = t_b.get("cue_entry") or 0.0
+
+    if cue_fade is not None:
+        fade_start = cue_fade
+    else:
+        fade_start = max(0.0, (t_a.get("length") or 180.0) - 16.0)
+
+    if cue_fade is not None and cue_exit is not None:
+        fade_dur = max(0.0, cue_exit - cue_fade)
+    else:
+        fade_dur = 16.0 * (60.0 / bpm_a)
+
+    # 1. Pre-audio from Track A
+    pre_start = max(0.0, fade_start - pre_s)
+    pre_dur = fade_start - pre_start
+    pre_audio = load_audio_clip(t_a["path"], start_s=pre_start, duration_s=pre_dur, sr=sr)
+
+    # Pre-Cue 2 volume dip
+    if mode != "immediate" and mode != "normal" and len(pre_audio) > 10:
+        dip_samples = min(int(sr * 1.5), len(pre_audio))
+        t_dip = np.linspace(0.0, 1.0, dip_samples)
+        dip_curve = 1.0 - (1.0 - 0.88) * (0.5 - 0.5 * np.cos(t_dip * np.pi))
+        pre_audio[-dip_samples:] *= dip_curve[:, None]
+
+    if mode == "normal":
+        outro_dur = max(0.1, fade_dur)
+        a_outro = load_audio_clip(t_a["path"], start_s=fade_start, duration_s=outro_dur, sr=sr)
+        fade_out_samples = min(int(sr * 0.015), len(a_outro))
+        if fade_out_samples > 0:
+            a_outro[-fade_out_samples:] *= np.linspace(1.0, 0.0, fade_out_samples)[:, None]
+        b_post = load_audio_clip(t_b["path"], start_s=b_entry, duration_s=post_s + 1.0, sr=sr)
+        return np.concatenate([pre_audio, a_outro, b_post], axis=0)
+
+    if mode == "immediate" or fade_dur <= 0.05:
+        fade_out_samples = min(int(sr * 0.015), len(pre_audio))
+        if fade_out_samples > 0:
+            pre_audio[-fade_out_samples:] *= np.linspace(1.0, 0.0, fade_out_samples)[:, None]
+        b_post = load_audio_clip(t_b["path"], start_s=b_entry, duration_s=post_s + 2.0, sr=sr)
+        return np.concatenate([pre_audio, b_post], axis=0)
+
+    # Crossfade blends
+    a_trans = load_audio_clip(t_a["path"], start_s=fade_start, duration_s=fade_dur, sr=sr)
+    tempo_ratio = compute_tempo_ratio(bpm_a, bpm_b)
+    if abs(tempo_ratio - 1.0) > 0.0005:
+        dur_b_needed = fade_dur * tempo_ratio
+        b_trans = load_audio_clip(t_b["path"], start_s=b_entry, duration_s=dur_b_needed, sr=sr, tempo_ratio=tempo_ratio)
+    else:
+        dur_b_needed = fade_dur
+        b_trans = load_audio_clip(t_b["path"], start_s=b_entry, duration_s=fade_dur, sr=sr, tempo_ratio=1.0)
+
+    target_len = len(a_trans)
+    if len(b_trans) > target_len:
+        b_trans = b_trans[:target_len]
+    elif len(b_trans) < target_len:
+        b_trans = np.pad(b_trans, ((0, target_len - len(b_trans)), (0, 0)))
+
+    if mode == "filter-sweep":
+        blended = blend_filter_sweep(a_trans, b_trans, sr=sr)
+    elif mode == "echo-out":
+        blended = blend_echo_out(a_trans, b_trans, sr=sr, bpm=bpm_a)
+    elif mode == "equal-power":
+        blended = blend_equal_power(a_trans, b_trans)
+    else:
+        blended = blend_gradual(a_trans, b_trans, sr=sr, bass_swap_ratio=bass_swap_ratio)
+
+    post_start = b_entry + dur_b_needed
+    b_post = load_audio_clip(t_b["path"], start_s=post_start, duration_s=post_s, sr=sr)
+    return np.concatenate([pre_audio, blended, b_post], axis=0)
 
 def main():
     args = parse_args()

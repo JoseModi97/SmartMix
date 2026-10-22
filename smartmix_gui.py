@@ -1,15 +1,17 @@
 """
 ==============================================================================
- SMARTMIX STUDIO: MODERN DESKTOP USER INTERFACE
+ SMARTMIX STUDIO: MODERN DESKTOP USER INTERFACE & TRANSITION DIRECTOR
 ==============================================================================
 A sleek, modern dark-themed graphical interface for the SmartMix DJ mixtape
-compilation engine.
+compilation engine with interactive per-transition auditioning.
 
 Features:
-  - Configure mix title and custom export destination folder
+  - Configure mix title and custom export destination folder (1 master output file)
   - Live preview and refresh of VirtualDJ Automix queue & Cue markers
-  - Choose transition style (Gradual Cue 2 -> Cue 3 DJ Crossfade)
-  - Loudness targets and true-peak limiter controls
+  - Interactive Transition Director: customize each song-to-song transition individually
+    (Gradual DJ Crossfade, Normal Outro to Cue 3, Immediate Cut, Filter-Sweep, Echo-Out)
+  - Instant Transition Auditioning: listen to how any transition sounds before compiling!
+  - Loudness targets and true-peak limiter controls (EBU R128)
   - Real-time compilation progress bar and streamed terminal logs
   - 1-click 'Open in Explorer' and 'Play Mix' buttons upon completion
 ==============================================================================
@@ -19,7 +21,16 @@ import os
 import sys
 import threading
 import subprocess
+import tempfile
 from pathlib import Path
+
+try:
+    import winsound
+except ImportError:
+    winsound = None
+
+import numpy as np
+from scipy.io import wavfile
 
 try:
     import customtkinter as ctk
@@ -37,18 +48,41 @@ if ctk is not None:
     ctk.set_appearance_mode("dark")
     ctk.set_default_color_theme("blue")
 
+TRANSITION_MODES = [
+    "Gradual DJ Crossfade",
+    "Normal Cut (Hear Out to Cue 3)",
+    "Immediate Cut (Drop)",
+    "Filter-Sweep Wash",
+    "Echo-Out Decay",
+    "Equal-Power Blend"
+]
+
+MODE_TO_CLI = {
+    "Gradual DJ Crossfade": "gradual",
+    "Normal Cut (Hear Out to Cue 3)": "normal",
+    "Immediate Cut (Drop)": "immediate",
+    "Filter-Sweep Wash": "filter-sweep",
+    "Echo-Out Decay": "echo-out",
+    "Equal-Power Blend": "equal-power"
+}
+
 class SmartMixApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("SmartMix Studio — DJ Continuous Mixtape Engine")
-        self.root.geometry("980x820")
-        self.root.minsize(860, 680)
+        self.root.title("SmartMix Studio — DJ Continuous Mixtape Engine & Transition Director")
+        self.root.geometry("1060x860")
+        self.root.minsize(920, 720)
 
         # Application state
         self.tracks = []
         self.compile_process = None
         self.is_compiling = False
         self.last_output_file = None
+
+        # Per-transition controls
+        self.trans_vars = {}
+        self.trans_audition_btns = {}
+        self.current_audition_idx = None
 
         # Build UI
         self._build_header()
@@ -75,14 +109,14 @@ class SmartMixApp:
 
             subtitle_lbl = ctk.CTkLabel(
                 title_sub_frame,
-                text="VirtualDJ On-Beat Continuous Mixtape & Cue Transition Engine",
+                text="VirtualDJ Cue Transition Director & Studio Master Compiler",
                 font=ctk.CTkFont(size=12),
                 text_color=("#999999", "#aaaaaa")
             )
             subtitle_lbl.pack(anchor="w")
         else:
             tk.Label(title_sub_frame, text="🎧 SMARTMIX STUDIO", font=("Arial", 18, "bold"), fg="#60cdff", bg="#121218").pack(anchor="w")
-            tk.Label(title_sub_frame, text="VirtualDJ On-Beat Continuous Mixtape Engine", font=("Arial", 10), fg="#aaaaaa", bg="#121218").pack(anchor="w")
+            tk.Label(title_sub_frame, text="VirtualDJ Cue Transition Director & Studio Master Compiler", font=("Arial", 10), fg="#aaaaaa", bg="#121218").pack(anchor="w")
 
         # Status badge
         self.status_badge = ctk.CTkLabel(
@@ -121,8 +155,8 @@ class SmartMixApp:
         self.entry_name = ctk.CTkEntry(
             name_row,
             textvariable=self.mix_name_var,
-            placeholder_text="Auto-detected from folder (e.g. Y2K, Amapiano, Afrobeats)",
-            width=320
+            placeholder_text="Auto-detected from playlist folder",
+            width=340
         ) if ctk else tk.Entry(name_row, textvariable=self.mix_name_var, width=30)
         self.entry_name.pack(side="left", padx=10, fill="x", expand=True)
 
@@ -148,11 +182,11 @@ class SmartMixApp:
         ) if ctk else tk.Button(dest_row, text="Browse...", command=self.browse_destination)
         btn_browse.pack(side="right")
 
-        # Output preview label
+        # Output preview label (Single master output file for SmartMix Studio)
         preview_row = ctk.CTkFrame(export_card, fg_color="transparent") if ctk else tk.Frame(export_card)
         preview_row.pack(fill="x", padx=14, pady=(2, 8))
 
-        lbl_preview_title = ctk.CTkLabel(preview_row, text="Output File Preview:", width=140, anchor="w", font=ctk.CTkFont(size=11), text_color="#888888") if ctk else tk.Label(preview_row, text="Output Preview:")
+        lbl_preview_title = ctk.CTkLabel(preview_row, text="Master Output File:", width=140, anchor="w", font=ctk.CTkFont(size=11), text_color="#888888") if ctk else tk.Label(preview_row, text="Master Output File:")
         lbl_preview_title.pack(side="left")
 
         self.lbl_preview_path = ctk.CTkLabel(
@@ -167,7 +201,7 @@ class SmartMixApp:
         self._update_preview_path()
 
         # ---------------------------------------------------------------------
-        # CARD 2: VIRTUALDJ AUTOMIX QUEUE (Live Playlist Preview)
+        # CARD 2: VIRTUALDJ AUTOMIX QUEUE SUMMARY
         # ---------------------------------------------------------------------
         queue_card = self._create_card(main_container, "🎵 Active VirtualDJ Automix Queue")
         queue_card.pack(fill="x", pady=6)
@@ -186,50 +220,42 @@ class SmartMixApp:
         btn_reload = ctk.CTkButton(
             queue_top,
             text="🔄 Reload from VirtualDJ",
-            width=160,
+            width=170,
             fg_color="#334155",
             hover_color="#475569",
             command=lambda: self.refresh_playlist(show_alert=True)
         ) if ctk else tk.Button(queue_top, text="Reload", command=lambda: self.refresh_playlist(show_alert=True))
         btn_reload.pack(side="right")
 
-        # Scrollable track table box
-        self.table_box = ctk.CTkTextbox(
-            queue_card,
-            height=140,
-            font=ctk.CTkFont(family="Consolas", size=11),
-            activate_scrollbars=True
-        ) if ctk else tk.Text(queue_card, height=7, font=("Consolas", 10))
-        self.table_box.pack(fill="x", padx=14, pady=(0, 10))
+        # ---------------------------------------------------------------------
+        # CARD 3: TRANSITION DIRECTOR & AUDITION STUDIO
+        # ---------------------------------------------------------------------
+        trans_card = self._create_card(main_container, "🎚️ Transition Director & Audition Studio")
+        trans_card.pack(fill="x", pady=6)
+
+        trans_header = ctk.CTkFrame(trans_card, fg_color="transparent") if ctk else tk.Frame(trans_card)
+        trans_header.pack(fill="x", padx=14, pady=(2, 6))
+
+        if ctk:
+            ctk.CTkLabel(
+                trans_header,
+                text="Audition and choose the transition style for each song pair. Mix different transitions to fit each vibe!",
+                font=ctk.CTkFont(size=11),
+                text_color="#94a3b8"
+            ).pack(anchor="w")
+
+        # Scrollable container for individual transition rows
+        self.transitions_container = ctk.CTkFrame(trans_card, fg_color=("#181822", "#0f172a"), corner_radius=6) if ctk else tk.Frame(trans_card, bg="#0f172a")
+        self.transitions_container.pack(fill="x", padx=14, pady=(0, 10))
 
         # ---------------------------------------------------------------------
-        # CARD 3: AUDIO & TRANSITION SETTINGS
+        # CARD 4: MASTERING CONTROLS
         # ---------------------------------------------------------------------
-        settings_card = self._create_card(main_container, "🎛️ Transition & Studio Mastering Controls")
+        settings_card = self._create_card(main_container, "🎛️ Studio Mastering & Headroom Controls")
         settings_card.pack(fill="x", pady=6)
 
         opts_row = ctk.CTkFrame(settings_card, fg_color="transparent") if ctk else tk.Frame(settings_card)
         opts_row.pack(fill="x", padx=14, pady=8)
-
-        # Transition Mode: Normal Cut vs Gradual Crossfade vs Both
-        col_mode = ctk.CTkFrame(opts_row, fg_color="transparent") if ctk else tk.Frame(opts_row)
-        col_mode.pack(side="left", fill="x", expand=True, padx=6)
-        if ctk:
-            ctk.CTkLabel(col_mode, text="Transition Mode:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w")
-            self.mode_var = tk.StringVar(value="Both (Normal & Crossfaded)")
-            self.mode_var.trace_add("write", lambda *args: self._update_preview_path())
-            self.opt_mode = ctk.CTkOptionMenu(
-                col_mode,
-                values=[
-                    "Both (Normal & Crossfaded)",
-                    "Normal Transition (Hear Out to Cue 3)",
-                    "Gradual DJ Crossfade (Cue 2 -> Cue 3)"
-                ],
-                variable=self.mode_var
-            )
-            self.opt_mode.pack(fill="x", pady=4)
-        else:
-            self.mode_var = tk.StringVar(value="Both (Normal & Crossfaded)")
 
         # Target Loudness
         col_loud = ctk.CTkFrame(opts_row, fg_color="transparent") if ctk else tk.Frame(opts_row)
@@ -274,9 +300,9 @@ class SmartMixApp:
             ).pack(side="left")
 
         # ---------------------------------------------------------------------
-        # CARD 4: LIVE COMPILATION CONSOLE & ACTIONS
+        # CARD 5: LIVE COMPILATION CONSOLE & ACTIONS
         # ---------------------------------------------------------------------
-        action_card = self._create_card(main_container, "⚡ Live Mixtape Compilation Console")
+        action_card = self._create_card(main_container, "⚡ Master Mixtape Compilation Console")
         action_card.pack(fill="both", expand=True, pady=6)
 
         # Primary compile button
@@ -285,7 +311,7 @@ class SmartMixApp:
 
         self.btn_compile = ctk.CTkButton(
             btn_row,
-            text="🚀 COMPILE MASTER MIXTAPE",
+            text="🚀 COMPILE MASTER MIXTAPE (1 FILE)",
             font=ctk.CTkFont(size=15, weight="bold"),
             height=46,
             fg_color="#0284c7",
@@ -316,10 +342,10 @@ class SmartMixApp:
         # Real-time console log textbox
         self.console_box = ctk.CTkTextbox(
             action_card,
-            height=180,
+            height=160,
             font=ctk.CTkFont(family="Consolas", size=11),
             activate_scrollbars=True
-        ) if ctk else tk.Text(action_card, height=10, font=("Consolas", 10), bg="#0f172a", fg="#e2e8f0")
+        ) if ctk else tk.Text(action_card, height=8, font=("Consolas", 10), bg="#0f172a", fg="#e2e8f0")
         self.console_box.pack(fill="both", expand=True, padx=14, pady=(0, 10))
 
         # Action bar when done (Open folder / Play mix)
@@ -365,14 +391,9 @@ class SmartMixApp:
         tracks = getattr(self, "tracks", None)
         mix_name = gm.resolve_mix_name(curr_name, tracks)
         dest_dir = self.dest_var.get().strip() or str(Path.home() / "Downloads")
-        mode_val = self.mode_var.get() if hasattr(self, "mode_var") else "Crossfade"
-        if "Crossfade" in mode_val:
-            suffix = "Crossfaded"
-        elif "Both" in mode_val:
-            suffix = "Normal & Crossfaded"
-        else:
-            suffix = "Normal"
-        out_file = os.path.join(dest_dir, f"{mix_name}_Continuous_Mix_{suffix}.mp3")
+        # SmartMix Studio produces exactly 1 unified continuous mix output file
+        out_file = os.path.join(dest_dir, f"{mix_name}_Continuous_Mix.mp3")
+        self.last_output_file = out_file
         if hasattr(self, "lbl_preview_path"):
             if ctk:
                 self.lbl_preview_path.configure(text=out_file)
@@ -385,18 +406,20 @@ class SmartMixApp:
             self.dest_var.set(chosen)
 
     def refresh_playlist(self, show_alert=False):
-        """Scans VirtualDJ Automix queue and Cue Database to update track table."""
+        """Scans VirtualDJ Automix queue, populates metadata, and builds transition controls."""
         class DummyArgs:
             entry_cue = 1
             fade_cue = 2
             exit_cue = 3
             use_last_cues = False
 
+        self.stop_audition()
+
         try:
             tracks = gm.get_track_data(DummyArgs())
             self.tracks = tracks
 
-            # Auto-populate destination directory and mix name from track location if present
+            # Auto-populate destination directory and mix name from track location
             if tracks and len(tracks) > 0 and tracks[0].get("path"):
                 p_dir = str(Path(tracks[0]["path"]).parent)
                 if os.path.exists(p_dir):
@@ -406,48 +429,183 @@ class SmartMixApp:
                 if not curr or curr in ("Amapiano", "Mixtape"):
                     self.mix_name_var.set(detected)
 
-            self.table_box.configure(state="normal") if ctk else None
-            self.table_box.delete("1.0", "end")
+            # Rebuild Transition Rows
+            for widget in self.transitions_container.winfo_children():
+                widget.destroy()
 
-            if not tracks:
-                msg = "No tracks currently detected in VirtualDJ Automix.\nIn VirtualDJ, drag songs into Sideview -> Automix and click Save (or close VirtualDJ)."
-                self.table_box.insert("end", msg)
-                self.queue_info_lbl.configure(text="0 tracks loaded | Queue is empty", text_color="#f87171") if ctk else None
-            else:
+            self.trans_vars.clear()
+            self.trans_audition_btns.clear()
+
+            if not tracks or len(tracks) < 2:
                 self.queue_info_lbl.configure(
-                    text=f"✓ Successfully loaded {len(tracks)} track{'s' if len(tracks) > 1 else ''} from VirtualDJ Automix",
-                    text_color="#4ade80"
+                    text="VirtualDJ Automix list has fewer than 2 tracks. Load at least 2 tracks to mix.",
+                    text_color="#f87171"
                 ) if ctk else None
+                return
 
-                header = f"{'#':<3} | {'Artist & Title':<46} | {'BPM':<6} | {'Cue 1(In)':<9} | {'Cue 2(Fade)':<11} | {'Cue 3(Cut)':<10} | {'Duration'}\n"
-                separator = "-" * 105 + "\n"
-                self.table_box.insert("end", header)
-                self.table_box.insert("end", separator)
+            self.queue_info_lbl.configure(
+                text=f"✓ Loaded {len(tracks)} tracks from VirtualDJ Automix ({len(tracks) - 1} Transitions Available)",
+                text_color="#4ade80"
+            ) if ctk else None
 
-                for i, t in enumerate(tracks):
-                    art_title = f"{t['artist']} - {t['title']}"
-                    if len(art_title) > 46:
-                        art_title = art_title[:43] + "..."
-                    c1 = gm.format_time(t["cue_entry"])
-                    c2 = gm.format_time(t["cue_fade"])
-                    c3 = gm.format_time(t["cue_exit"])
-                    dur = gm.format_time(t["length"])
-                    line = f"{i+1:<3} | {art_title:<46} | {t['bpm']:<6.1f} | {c1:<9} | {c2:<11} | {c3:<10} | {dur}\n"
-                    self.table_box.insert("end", line)
+            # Populate each transition
+            for i in range(len(tracks) - 1):
+                t_a = tracks[i]
+                t_b = tracks[i + 1]
+                self._build_transition_row(i, t_a, t_b)
 
-            self.table_box.configure(state="disabled") if ctk else None
+            self._update_preview_path()
 
             if show_alert:
-                if tracks:
-                    messagebox.showinfo("VirtualDJ Synced", f"Successfully loaded {len(tracks)} tracks from your active VirtualDJ Automix queue!")
-                else:
-                    messagebox.showwarning("VirtualDJ Queue Empty", "VirtualDJ Automix folder is empty or not yet saved by VirtualDJ.\n\nMake sure to click the Automix panel menu -> Save or close VirtualDJ to update the playlist.")
+                messagebox.showinfo("VirtualDJ Synced", f"Loaded {len(tracks)} tracks with {len(tracks) - 1} customizable transitions!")
 
         except Exception as e:
-            self.table_box.delete("1.0", "end")
-            self.table_box.insert("end", f"Notice reading VirtualDJ files: {e}")
             if show_alert:
                 messagebox.showerror("Error", f"Failed to read VirtualDJ playlist: {e}")
+
+    def _build_transition_row(self, idx, t_a, t_b):
+        """Builds an interactive transition configuration row with style picker and audition button."""
+        bpm_a = t_a.get("bpm") or 118.0
+        bpm_b = t_b.get("bpm") or 118.0
+        fade_time = gm.format_time(t_a.get("cue_fade"))
+        exit_time = gm.format_time(t_a.get("cue_exit"))
+        
+        has_fade = t_a.get("cue_fade") is not None
+        has_exit = t_a.get("cue_exit") is not None
+        is_immediate = has_fade and has_exit and (t_a["cue_exit"] <= t_a["cue_fade"] + 0.1)
+        dur_s = (t_a["cue_exit"] - t_a["cue_fade"]) if (has_fade and has_exit) else 0.0
+
+        row = ctk.CTkFrame(self.transitions_container, fg_color=("#1f2937" if idx % 2 == 0 else "#111827"), corner_radius=6) if ctk else tk.Frame(self.transitions_container)
+        row.pack(fill="x", padx=6, pady=3)
+
+        # Left Column: Track Info
+        info_col = ctk.CTkFrame(row, fg_color="transparent") if ctk else tk.Frame(row)
+        info_col.pack(side="left", fill="x", expand=True, padx=10, pady=6)
+
+        title_a = t_a["title"][:22] + "..." if len(t_a["title"]) > 25 else t_a["title"]
+        title_b = t_b["title"][:22] + "..." if len(t_b["title"]) > 25 else t_b["title"]
+        main_text = f"#{idx+1}  {title_a}  ➔  {title_b}"
+
+        if is_immediate:
+            detail_text = f"Cue 2 == Cue 3 ({fade_time}) | Immediate Cut | {bpm_a:.1f} ➔ {bpm_b:.1f} BPM"
+            default_style = "Immediate Cut (Drop)"
+        else:
+            detail_text = f"Cue 2 ({fade_time}) ➔ Cue 3 ({exit_time}) [{dur_s:.1f}s] | {bpm_a:.1f} ➔ {bpm_b:.1f} BPM"
+            default_style = "Gradual DJ Crossfade"
+
+        if ctk:
+            ctk.CTkLabel(info_col, text=main_text, font=ctk.CTkFont(size=12, weight="bold"), anchor="w").pack(anchor="w")
+            ctk.CTkLabel(info_col, text=detail_text, font=ctk.CTkFont(size=10), text_color="#94a3b8", anchor="w").pack(anchor="w")
+        else:
+            tk.Label(info_col, text=main_text, font=("Arial", 10, "bold")).pack(anchor="w")
+            tk.Label(info_col, text=detail_text, font=("Arial", 8), fg="#94a3b8").pack(anchor="w")
+
+        # Right Column: Transition Style Dropdown + Audition Button
+        ctrl_col = ctk.CTkFrame(row, fg_color="transparent") if ctk else tk.Frame(row)
+        ctrl_col.pack(side="right", padx=10, pady=6)
+
+        style_var = tk.StringVar(value=default_style)
+        self.trans_vars[idx] = style_var
+
+        if ctk:
+            opt = ctk.CTkOptionMenu(
+                ctrl_col,
+                values=TRANSITION_MODES,
+                variable=style_var,
+                width=190,
+                font=ctk.CTkFont(size=11)
+            )
+            opt.pack(side="left", padx=6)
+        else:
+            opt = tk.OptionMenu(ctrl_col, style_var, *TRANSITION_MODES)
+            opt.pack(side="left", padx=6)
+
+        btn_audition = ctk.CTkButton(
+            ctrl_col,
+            text="▶ Audition",
+            width=92,
+            font=ctk.CTkFont(size=11, weight="bold"),
+            fg_color="#0284c7",
+            hover_color="#0369a1",
+            command=lambda i=idx: self.toggle_audition(i)
+        ) if ctk else tk.Button(ctrl_col, text="Audition", command=lambda i=idx: self.toggle_audition(i))
+        btn_audition.pack(side="left", padx=4)
+
+        self.trans_audition_btns[idx] = btn_audition
+
+    def toggle_audition(self, idx):
+        """Toggles audio playback auditioning for the selected transition."""
+        if not winsound:
+            messagebox.showinfo("Audition Notice", "Audio playback (winsound) is not available on this platform.")
+            return
+
+        # If currently playing this transition, stop it
+        if self.current_audition_idx == idx:
+            self.stop_audition()
+            return
+
+        self.stop_audition()
+
+        btn = self.trans_audition_btns.get(idx)
+        if btn:
+            if ctk:
+                btn.configure(text="⏳ Loading...", state="disabled")
+            else:
+                btn.config(text="⏳ Loading...", state="disabled")
+
+        def _worker():
+            try:
+                t_a = self.tracks[idx]
+                t_b = self.tracks[idx + 1]
+                choice_str = self.trans_vars[idx].get()
+                mode_key = MODE_TO_CLI.get(choice_str, "gradual")
+
+                clip = gm.render_transition_preview(t_a, t_b, mode=mode_key)
+                temp_wav = os.path.join(tempfile.gettempdir(), f"_smartmix_audition_{idx}.wav")
+                wavfile.write(temp_wav, 44100, (np.clip(clip, -1.0, 1.0) * 32767).astype(np.int16))
+
+                def _start_playback():
+                    self.current_audition_idx = idx
+                    if btn:
+                        if ctk:
+                            btn.configure(text="⏹ Stop", fg_color="#ef4444", hover_color="#dc2626", state="normal")
+                        else:
+                            btn.config(text="⏹ Stop", state="normal")
+                    winsound.PlaySound(temp_wav, winsound.SND_ASYNC | winsound.SND_FILENAME)
+                    clip_len_ms = int((len(clip) / 44100.0) * 1000) + 300
+                    self.root.after(clip_len_ms, lambda: self._on_audition_finished(idx))
+
+                self.root.after(0, _start_playback)
+            except Exception as e:
+                def _error_reset():
+                    if btn:
+                        if ctk:
+                            btn.configure(text="▶ Audition", fg_color="#0284c7", hover_color="#0369a1", state="normal")
+                        else:
+                            btn.config(text="▶ Audition", state="normal")
+                    messagebox.showwarning("Audition Notice", f"Could not preview transition: {e}")
+                self.root.after(0, _error_reset)
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _on_audition_finished(self, idx):
+        if self.current_audition_idx == idx:
+            self.stop_audition()
+
+    def stop_audition(self):
+        if winsound:
+            try:
+                winsound.PlaySound(None, 0)
+            except Exception:
+                pass
+        if self.current_audition_idx is not None:
+            old_btn = self.trans_audition_btns.get(self.current_audition_idx)
+            if old_btn:
+                if ctk:
+                    old_btn.configure(text="▶ Audition", fg_color="#0284c7", hover_color="#0369a1", state="normal")
+                else:
+                    old_btn.config(text="▶ Audition", state="normal")
+            self.current_audition_idx = None
 
     def log_console(self, text):
         self.console_box.configure(state="normal") if ctk else None
@@ -458,6 +616,8 @@ class SmartMixApp:
     def start_compilation(self):
         if self.is_compiling:
             return
+
+        self.stop_audition()
 
         curr_name = (self.mix_name_var.get() or "").strip()
         mix_name = gm.resolve_mix_name(curr_name, getattr(self, "tracks", None))
@@ -480,20 +640,18 @@ class SmartMixApp:
         elif "-2.0" in raw_tp:
             true_peak = -2.0
 
-        mode_str = self.mode_var.get() if hasattr(self, "mode_var") else "Both"
-        if "Both" in mode_str:
-            target_mode = "both"
-            suffix = "Crossfaded"
-        elif "Crossfade" in mode_str:
-            target_mode = "crossfade"
-            suffix = "Crossfaded"
-        else:
-            target_mode = "normal"
-            suffix = "Normal"
+        # Build per-transition custom styles
+        style_entries = []
+        for idx, var in sorted(self.trans_vars.items()):
+            choice_str = var.get()
+            mode_key = MODE_TO_CLI.get(choice_str, "gradual")
+            style_entries.append(f"{idx+1}={mode_key}")
+        trans_style_arg = ",".join(style_entries)
 
-        with_scratch = self.with_scratch_var.get()
-        out_file = os.path.join(dest_dir, f"{mix_name}_Continuous_Mix_{suffix}.mp3")
+        # SmartMix Studio produces 1 unified master output file
+        out_file = os.path.join(dest_dir, f"{mix_name}_Continuous_Mix.mp3")
         self.last_output_file = out_file
+        with_scratch = self.with_scratch_var.get()
 
         # UI state during compiling
         self.is_compiling = True
@@ -510,11 +668,11 @@ class SmartMixApp:
         self.console_box.delete("1.0", "end")
         self.console_box.configure(state="disabled") if ctk else None
 
-        self.log_console("Starting SmartMix compilation pipeline...\n")
+        self.log_console("Starting SmartMix Studio master compilation pipeline...\n")
         self.log_console(f"Mix Title   : {mix_name}\n")
         self.log_console(f"Destination : {dest_dir}\n")
-        self.log_console(f"Output File : {out_file}\n")
-        self.log_console(f"Mode        : {target_mode.upper()} ({'Clean Cue-Drop Transitions, Zero Crossfade' if target_mode == 'normal' else 'Gradual Crossfade' if target_mode == 'crossfade' else 'Both Normal and Crossfade'})\n")
+        self.log_console(f"Master Output: {out_file}\n")
+        self.log_console(f"Transitions : {len(style_entries)} customized song-to-song transitions\n")
         self.log_console("-" * 72 + "\n")
 
         # Launch compilation in background worker thread
@@ -522,8 +680,9 @@ class SmartMixApp:
             sys.executable,
             os.path.join(os.path.dirname(__file__), "smartmix.py"),
             "--mix-name", mix_name,
-            "--output-dir", dest_dir,
-            "--mode", target_mode,
+            "--output-file", out_file,
+            "--mode", "crossfade",
+            "--trans-style", trans_style_arg,
             "--target-lufs", str(target_lufs),
             "--true-peak", str(true_peak)
         ]
@@ -562,7 +721,7 @@ class SmartMixApp:
             self.progress_bar.configure(mode="determinate")
             self.progress_bar.set(1.0 if returncode == 0 else 0.0)
 
-        self.btn_compile.configure(state="normal", text="🚀 COMPILE MASTER MIXTAPE") if ctk else None
+        self.btn_compile.configure(state="normal", text="🚀 COMPILE MASTER MIXTAPE (1 FILE)") if ctk else None
         self.btn_cancel.configure(state="disabled") if ctk else None
 
         if returncode == 0:

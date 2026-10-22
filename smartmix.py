@@ -41,6 +41,12 @@ def parse_args():
         help="Name or genre of the mix (default: auto-detected from track folder, e.g. 'Y2K', 'Amapiano')"
     )
     parser.add_argument(
+        "--output-file",
+        type=str,
+        default=None,
+        help="Explicit single output MP3 path (used by SmartMix Studio for 1-file master export)"
+    )
+    parser.add_argument(
         "--mode",
         type=str,
         default="both",
@@ -154,8 +160,13 @@ def run_all_in_one():
         print(f"  [{i+1}] {t['artist']} - {t['title']}")
         print(f"      BPM: {t['bpm']:.1f} | Cues: {cues_count} | Entry: {gm.format_time(t['cue_entry'])} | Fade/Cut: {gm.format_time(t['cue_fade'])} | Outro: {gm.format_time(t['cue_exit'])}")
 
-    normal_out = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Normal.mp3")
-    crossfade_out = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Crossfaded.mp3")
+    if args.output_file and args.output_file.strip():
+        crossfade_out = args.output_file.strip()
+        normal_out = os.path.splitext(crossfade_out)[0] + "_Normal.mp3"
+        args.output_dir = os.path.dirname(crossfade_out)
+    else:
+        normal_out = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Normal.mp3")
+        crossfade_out = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Crossfaded.mp3")
     scratch_out = os.path.join(args.output_dir, f"{args.mix_name}_DJ_Scratch_Preview.mp3")
 
     # -------------------------------------------------------------------------

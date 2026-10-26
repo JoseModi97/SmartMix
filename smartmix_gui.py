@@ -525,13 +525,14 @@ class SmartMixApp:
         beats_val = dur_s * (bpm_a / 60.0)
         bars_val = beats_val / 4.0
 
+        bpm_sync_text = f" | Speeds Matched: {bpm_b:.1f} ➔ {bpm_a:.1f} BPM" if abs(bpm_a - bpm_b) > 0.05 else f" | Speed: {bpm_a:.1f} BPM"
         if is_immediate:
             detail_text = f"Cue 2 == Cue 3 ({fade_time}) | Immediate Cut | {bpm_a:.1f} ➔ {bpm_b:.1f} BPM"
             default_style = "Immediate Cut (Drop on Cue 3)"
         elif dur_s > 10.0:
-            detail_text = f"Cue 2 ({fade_time}) ➔ Cue 3 ({exit_time}) [{dur_s:.1f}s / {bars_val:.0f} Bars - Long] | {bpm_a:.1f} ➔ {bpm_b:.1f} BPM"
+            detail_text = f"Cue 2 ({fade_time}) ➔ Cue 3 ({exit_time}) [{dur_s:.1f}s / {bars_val:.0f} Bars - Long]{bpm_sync_text}"
         else:
-            detail_text = f"Cue 2 ({fade_time}) ➔ Cue 3 ({exit_time}) [{dur_s:.1f}s / {bars_val:.1f} Bars] | {bpm_a:.1f} ➔ {bpm_b:.1f} BPM"
+            detail_text = f"Cue 2 ({fade_time}) ➔ Cue 3 ({exit_time}) [{dur_s:.1f}s / {bars_val:.1f} Bars]{bpm_sync_text}"
 
         if ctk:
             ctk.CTkLabel(info_col, text=main_text, font=ctk.CTkFont(size=12, weight="bold"), anchor="w").pack(anchor="w")

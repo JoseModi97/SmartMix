@@ -817,7 +817,7 @@ def render_normal_mix(tracks, args, output_file):
         # 2. Transition Window: Cue 2 to Cue 3 (Zero Crossfade, both tracks groove naturally)
         a_trans = load_audio_clip(t_a["path"], start_s=fade_start, duration_s=fade_dur, sr=sr)
         tempo_ratio = compute_tempo_ratio(bpm_a, bpm_b)
-        if abs(tempo_ratio - 1.0) > 0.0005:
+        if abs(tempo_ratio - 1.0) > 0.00005:
             dur_b_needed = fade_dur * tempo_ratio
             b_trans = load_audio_clip(
                 t_b["path"],
@@ -947,11 +947,25 @@ def load_audio_clip(path, start_s, duration_s=None, end_s=None, sr=44100, tempo_
     elif end_s is not None and end_s > start_s:
         cmd.extend(["-to", f"{end_s:.3f}"])
     cmd.extend(["-i", path])
-    if abs(tempo_ratio - 1.0) > 0.0005:
+    if abs(tempo_ratio - 1.0) > 0.00005:
         ratio_clamped = max(0.5, min(2.0, tempo_ratio))
-        cmd.extend(["-af", f"atempo={ratio_clamped:.5f}"])
+        # High-precision transient-preserving time stretch with rubberband, fallback to atempo
+        cmd.extend(["-af", f"rubberband=tempo={ratio_clamped:.5f}:transients=crisp"])
     cmd.extend(["-f", "s16le", "-ac", "2", "-ar", str(sr), "-"])
-    proc = subprocess.run(cmd, capture_output=True, check=True)
+    try:
+        proc = subprocess.run(cmd, capture_output=True, check=True)
+    except subprocess.CalledProcessError:
+        if abs(tempo_ratio - 1.0) > 0.00005:
+            ratio_clamped = max(0.5, min(2.0, tempo_ratio))
+            cmd_fb = ["ffmpeg", "-y", "-ss", f"{start_s:.3f}"]
+            if duration_s is not None and duration_s > 0:
+                cmd_fb.extend(["-t", f"{duration_s:.3f}"])
+            elif end_s is not None and end_s > start_s:
+                cmd_fb.extend(["-to", f"{end_s:.3f}"])
+            cmd_fb.extend(["-i", path, "-af", f"atempo={ratio_clamped:.5f}", "-f", "s16le", "-ac", "2", "-ar", str(sr), "-"])
+            proc = subprocess.run(cmd_fb, capture_output=True, check=True)
+        else:
+            raise
     raw = np.frombuffer(proc.stdout, dtype=np.int16).astype(np.float32) / 32768.0
     return raw.reshape(-1, 2)
 
@@ -1005,7 +1019,7 @@ def render_continuous_mix(tracks, args, output_file):
             print(f"  * Transition {i+1} -> {i+2}: IMMEDIATE CUT (Cue 2 == Cue 3) | Tracks: {tracks[i]['title']} -> {tracks[i+1]['title']}")
         else:
             t_ratio = compute_tempo_ratio(bpm_a, bpm_b)
-            tempo_note = f" [Tempo Sync: {bpm_b:.1f} -> {bpm_a:.1f} BPM]" if abs(t_ratio - 1.0) > 0.0005 else ""
+            tempo_note = f" [Tempo Matched: {bpm_b:.1f} -> {bpm_a:.1f} BPM]" if abs(t_ratio - 1.0) > 0.00005 else f" [Speed Matched: {bpm_a:.1f} BPM]"
             print(f"  * Transition {i+1} -> {i+2}: {dur:.1f}s ({mode.upper()}){tempo_note} | Tracks: {tracks[i]['title']} -> {tracks[i+1]['title']}")
 
     # Assemble master audio with DSP transitions
@@ -1076,7 +1090,7 @@ def render_continuous_mix(tracks, args, output_file):
         # Track A fades out over fade_dur
         a_trans = load_audio_clip(t_a["path"], start_s=fade_start, duration_s=fade_dur, sr=sr)
         tempo_ratio = compute_tempo_ratio(bpm_a, bpm_b)
-        if abs(tempo_ratio - 1.0) > 0.0005:
+        if abs(tempo_ratio - 1.0) > 0.00005:
             dur_b_needed = fade_dur * tempo_ratio
             b_trans = load_audio_clip(
                 t_b["path"],
@@ -1271,7 +1285,7 @@ def render_transition_preview(t_a, t_b, mode="gradual", pre_s=3.0, post_s=3.0, s
     # Crossfade blends
     a_trans = load_audio_clip(t_a["path"], start_s=fade_start, duration_s=fade_dur, sr=sr)
     tempo_ratio = compute_tempo_ratio(bpm_a, bpm_b)
-    if abs(tempo_ratio - 1.0) > 0.0005:
+    if abs(tempo_ratio - 1.0) > 0.00005:
         dur_b_needed = fade_dur * tempo_ratio
         b_trans = load_audio_clip(t_b["path"], start_s=b_entry, duration_s=dur_b_needed, sr=sr, tempo_ratio=tempo_ratio)
     else:

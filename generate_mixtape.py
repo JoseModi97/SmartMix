@@ -1,6 +1,8 @@
 import os
 import sys
 import random
+import shutil
+import datetime
 import argparse
 import subprocess
 import xml.etree.ElementTree as ET
@@ -159,6 +161,17 @@ def parse_args():
         help="Where normal transition cutoff occurs: 'cue3' (default: hear out full transition phrase to Cue 3) or 'cue2' (cutoff at Cue 2)"
     )
     parser.add_argument("--use-last-cues", action="store_true", help="If track has 4+ cues, automatically use the last 2 cues for the fade-out window")
+    parser.add_argument(
+        "--natural-cues",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Intelligent musical phrase-quantization and cue repair (auto-corrects 0s cuts, micro-fades, and silent intros to natural 8-bar / 4-bar downbeat drops, default: True)"
+    )
+    parser.add_argument(
+        "--optimize-vdj-cues",
+        action="store_true",
+        help="Permanently write natural, phrase-aligned cues back to VirtualDJ's database.xml (with automatic timestamped safety backup)"
+    )
     parser.add_argument("--output-dir", type=str, default=None, help="Destination directory for output files (default: auto-detect from playlist tracks, or ~/Downloads/Amapiano)")
     return parser.parse_args()
 
@@ -215,7 +228,150 @@ def extract_cue_points(song_elem, default_entry=1, default_fade=2, default_exit=
     if exit_pos is None and "cutEnd" in automix_points:
         exit_pos = automix_points["cutEnd"]
 
-    return entry_pos, fade_pos, exit_pos, cues_by_num
+    return entry_pos, fade_pos, exit_pos, cues_by_num, automix_points
+
+def calculate_natural_cues(track):
+    """
+    Calculates natural, phrase-aligned Cue 1 (Entry), Cue 2 (Fade Start), and Cue 3 (Cut/Exit).
+    Ensures:
+      1. Cue 1 snaps to the song's beat-drop / drum start (cutStart) rather than silence/banter.
+      2. Cue 2 & Cue 3 provide a full, natural 8-bar (or 4-bar) transition window aligned to downbeats.
+      3. Eliminates defective cues (0s cuts, negative durations, or 1-bar chops).
+    """
+    bpm = track.get("bpm") or 118.0
+    beat_s = 60.0 / bpm if bpm > 0 else 0.51
+    bar_s = beat_s * 4.0
+    phase = track.get("phase") or 0.0
+    length = track.get("length") or 200.0
+
+    c1 = track.get("cue_entry") or 0.0
+    c2 = track.get("cue_fade")
+    c3 = track.get("cue_exit")
+    automix = track.get("automix_points", {})
+
+    cut_start = automix.get("cutStart")
+    cut_end = automix.get("cutEnd")
+    fade_start = automix.get("fadeStart")
+    fade_end = automix.get("fadeEnd")
+
+    # 1. Natural Entry Cue (Cue 1):
+    # If cutStart indicates a spoken/quiet intro before beat drops, use that beat drop!
+    if cut_start is not None and cut_start > 2.0:
+        nat_c1 = cut_start
+    elif c1 > 0.05 and c1 < 5.0:
+        bar_idx = round((c1 - phase) / bar_s)
+        nat_c1 = max(0.0, phase + bar_idx * bar_s)
+    elif phase > 0.05 and phase < 3.0:
+        nat_c1 = phase
+    else:
+        nat_c1 = c1
+
+    # 2. Fade Out Start (Cue 2) and Mix Exit (Cue 3)
+    # Check if cues are defective (c2 == c3, negative duration, or < 3.5s):
+    is_defective = (c2 is None or c3 is None or c3 <= c2 + 3.5)
+
+    if is_defective:
+        target_exit = c3 if (c3 is not None and c3 > 60.0) else (cut_end if (cut_end and cut_end > 60.0) else (fade_end if (fade_end and fade_end > 60.0) else (length - 12.0)))
+        exit_bar = round((target_exit - phase) / bar_s)
+        nat_c3 = phase + exit_bar * bar_s
+        if nat_c3 > length - 2.0:
+            nat_c3 -= bar_s
+        # Full 8-bar (32 beat) transition window
+        nat_c2 = nat_c3 - (8.0 * bar_s)
+    else:
+        fade_bar = round((c2 - phase) / bar_s)
+        nat_c2 = phase + fade_bar * bar_s
+        dur_bars = max(4, round((c3 - c2) / bar_s))
+        nat_c3 = nat_c2 + dur_bars * bar_s
+        if nat_c3 > length - 1.0:
+            nat_c3 -= bar_s
+            nat_c2 -= bar_s
+
+    return round(nat_c1, 3), round(nat_c2, 3), round(nat_c3, 3)
+
+def optimize_vdj_cues(db_path=VDJ_DB, folder_path=VDJ_FOLDER, backup=True, playlist_only=True):
+    """
+    Permanently writes natural, phrase-aligned cues back to VirtualDJ's database.xml.
+    Creates a timestamped backup before modifying database.xml.
+    """
+    if not os.path.exists(db_path):
+        print(f"Error: VirtualDJ database not found at {db_path}")
+        return False, f"VirtualDJ database not found at {db_path}"
+
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    bak_path = f"{db_path}.bak_{ts}"
+    if backup:
+        shutil.copy2(db_path, bak_path)
+        print(f"-> Created VirtualDJ database safety backup: {bak_path}")
+
+    tree = ET.parse(db_path)
+    root = tree.getroot()
+    song_map = {s.get("FilePath"): s for s in root.findall("Song")}
+
+    target_songs = []
+    if playlist_only and os.path.exists(folder_path):
+        tree_f = ET.parse(folder_path)
+        for s_f in tree_f.getroot().findall("song"):
+            p = s_f.get("path")
+            if p in song_map:
+                target_songs.append(song_map[p])
+    else:
+        target_songs = root.findall("Song")
+
+    if not target_songs:
+        return False, "No matching songs found to optimize."
+
+    updated_count = 0
+    print(f"-> Optimizing VirtualDJ cue points for {len(target_songs)} track(s)...")
+
+    for s in target_songs:
+        scan = s.find("Scan")
+        bpm = 0.0
+        phase = 0.0
+        if scan is not None:
+            raw_bpm = float(scan.get("Bpm", 0.0) or 0.0)
+            if raw_bpm > 0:
+                bpm = 60.0 / raw_bpm
+            phase = float(scan.get("Phase", 0.0) or 0.0)
+
+        infos = s.find("Infos")
+        length = float(infos.get("SongLength", 0.0) or 0.0) if infos is not None else 0.0
+
+        tags = s.find("Tags")
+        artist = tags.get("Author", "") if tags is not None else ""
+        title = tags.get("Title", "") if tags is not None else ""
+
+        pois = s.findall("Poi")
+        cues = {int(poi.get("Num", 1)): float(poi.get("Pos", 0.0) or 0.0) for poi in pois if poi.get("Type") == "cue"}
+        automix = {poi.get("Point", ""): float(poi.get("Pos", 0.0) or 0.0) for poi in pois if poi.get("Type") == "automix"}
+
+        t_dict = {
+            "bpm": bpm,
+            "phase": phase,
+            "length": length,
+            "cue_entry": cues.get(1, 0.0),
+            "cue_fade": cues.get(2, None),
+            "cue_exit": cues.get(3, None),
+            "automix_points": automix
+        }
+
+        c1_new, c2_new, c3_new = calculate_natural_cues(t_dict)
+
+        cue_elems = {int(poi.get("Num", 1)): poi for poi in pois if poi.get("Type") == "cue"}
+
+        for num, new_pos in [(1, c1_new), (2, c2_new), (3, c3_new)]:
+            if num in cue_elems:
+                cue_elems[num].set("Pos", f"{new_pos:.6f}")
+            else:
+                ET.SubElement(s, "Poi", {"Pos": f"{new_pos:.6f}", "Num": str(num), "Type": "cue"})
+
+        updated_count += 1
+        print(f"  * {artist} - {title}: C1={c1_new:.2f}s | C2={c2_new:.2f}s -> C3={c3_new:.2f}s (Dur: {c3_new - c2_new:.1f}s)")
+
+    tree.write(db_path, encoding="utf-8", xml_declaration=True)
+    msg = f"Successfully optimized {updated_count} track(s) in VirtualDJ database.\nSafety backup saved to:\n{bak_path}"
+    print(f"-> {msg}")
+    return True, msg
 
 def get_track_data(args=None):
     if not os.path.exists(VDJ_FOLDER):
@@ -225,13 +381,14 @@ def get_track_data(args=None):
     default_fade = getattr(args, "fade_cue", 2) if args else 2
     default_exit = getattr(args, "exit_cue", 3) if args else 3
     use_last_cues = getattr(args, "use_last_cues", False) if args else False
+    use_natural_cues = getattr(args, "natural_cues", True) if args else True
 
     db_lookup = {}
     if os.path.exists(VDJ_DB):
         tree_db = ET.parse(VDJ_DB)
         for s in tree_db.getroot().findall("Song"):
             p = s.get("FilePath", "")
-            entry_pos, fade_pos, exit_pos, all_cues = extract_cue_points(
+            entry_pos, fade_pos, exit_pos, all_cues, automix_pts = extract_cue_points(
                 s,
                 default_entry=default_entry,
                 default_fade=default_fade,
@@ -240,10 +397,14 @@ def get_track_data(args=None):
             )
             scan = s.find("Scan")
             db_bpm = None
-            if scan is not None and scan.get("Bpm"):
-                raw_bpm = float(scan.get("Bpm"))
-                if raw_bpm > 0:
-                    db_bpm = round(60.0 / raw_bpm, 3)
+            db_phase = 0.0
+            if scan is not None:
+                if scan.get("Bpm"):
+                    raw_bpm = float(scan.get("Bpm"))
+                    if raw_bpm > 0:
+                        db_bpm = round(60.0 / raw_bpm, 3)
+                if scan.get("Phase"):
+                    db_phase = float(scan.get("Phase", 0.0) or 0.0)
             
             infos = s.find("Infos")
             db_length = float(infos.get("SongLength", 0.0)) if infos is not None and infos.get("SongLength") else 0.0
@@ -257,6 +418,8 @@ def get_track_data(args=None):
                 "fade": fade_pos,
                 "exit": exit_pos,
                 "all_cues": all_cues,
+                "automix_points": automix_pts,
+                "phase": db_phase,
                 "bpm": db_bpm,
                 "length": db_length,
                 "artist": db_artist,
@@ -296,17 +459,38 @@ def get_track_data(args=None):
                 artist = artist or "Unknown Artist"
                 title = title or stem
 
-        tracks.append({
+        t_entry = info.get("entry", 0.0)
+        t_fade = info.get("fade", None)
+        t_exit = info.get("exit", None)
+        automix_pts = info.get("automix_points", {})
+        phase_val = info.get("phase", 0.0)
+
+        t_obj = {
             "path": p,
             "artist": artist,
             "title": title,
             "bpm": bpm,
             "length": length,
-            "cue_entry": info.get("entry", 0.0),
-            "cue_fade": info.get("fade", None),
-            "cue_exit": info.get("exit", None),
-            "all_cues": info.get("all_cues", {})
-        })
+            "cue_entry": t_entry,
+            "cue_fade": t_fade,
+            "cue_exit": t_exit,
+            "all_cues": info.get("all_cues", {}),
+            "automix_points": automix_pts,
+            "phase": phase_val
+        }
+
+        # Apply intelligent musical phrase alignment & cue repair if enabled
+        if use_natural_cues:
+            cut_start = automix_pts.get("cutStart")
+            has_broken_fade = (t_fade is None or t_exit is None or t_exit <= t_fade + 3.5)
+            has_intro_talking = (cut_start is not None and cut_start > 2.0 and t_entry < 1.0)
+            if has_broken_fade or has_intro_talking:
+                nat_c1, nat_c2, nat_c3 = calculate_natural_cues(t_obj)
+                t_obj["cue_entry"] = nat_c1
+                t_obj["cue_fade"] = nat_c2
+                t_obj["cue_exit"] = nat_c3
+
+        tracks.append(t_obj)
     return tracks
 
 def format_time(seconds):

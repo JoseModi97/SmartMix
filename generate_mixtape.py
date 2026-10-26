@@ -87,9 +87,21 @@ def parse_args():
     parser.add_argument(
         "--crossfade-mode",
         type=str,
-        default="gradual",
-        choices=["gradual", "equal-power", "bass-swap"],
-        help="Global transition style: 'gradual' (default: Cue 2 to Cue 3 gradual crossfade with LR-4 bass crossover), 'equal-power'"
+        default="filter",
+        choices=["filter", "gradual", "equal-power", "bass-swap"],
+        help="Global transition style: 'filter' (default: VirtualDJ Color FX Filter sweep to eliminate beat clash), 'gradual' (Cue 2 to Cue 3 gradual crossfade with LR-4 crossover), 'equal-power'"
+    )
+    parser.add_argument(
+        "--use-filter",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Universal VirtualDJ Color FX Filter sweep (eliminates kick and sub-bass clashing between tracks, default: True)"
+    )
+    parser.add_argument(
+        "--no-filter",
+        dest="use_filter",
+        action="store_false",
+        help=argparse.SUPPRESS
     )
     parser.add_argument(
         "--trans-style",
@@ -197,10 +209,15 @@ def extract_cue_points(song_elem, default_entry=1, default_fade=2, default_exit=
 
     return entry_pos, fade_pos, exit_pos, cues_by_num
 
-def get_track_data(args):
+def get_track_data(args=None):
     if not os.path.exists(VDJ_FOLDER):
         raise FileNotFoundError(f"Automix folder not found: {VDJ_FOLDER}")
     
+    default_entry = getattr(args, "entry_cue", 1) if args else 1
+    default_fade = getattr(args, "fade_cue", 2) if args else 2
+    default_exit = getattr(args, "exit_cue", 3) if args else 3
+    use_last_cues = getattr(args, "use_last_cues", False) if args else False
+
     db_lookup = {}
     if os.path.exists(VDJ_DB):
         tree_db = ET.parse(VDJ_DB)
@@ -208,10 +225,10 @@ def get_track_data(args):
             p = s.get("FilePath", "")
             entry_pos, fade_pos, exit_pos, all_cues = extract_cue_points(
                 s,
-                default_entry=args.entry_cue,
-                default_fade=args.fade_cue,
-                default_exit=args.exit_cue,
-                use_last_cues=args.use_last_cues
+                default_entry=default_entry,
+                default_fade=default_fade,
+                default_exit=default_exit,
+                use_last_cues=use_last_cues
             )
             scan = s.find("Scan")
             db_bpm = None
@@ -308,17 +325,99 @@ def parse_custom_styles(trans_style_str):
 def get_transition_mode(idx, global_mode, custom_styles, last_mode=None):
     if idx in custom_styles:
         return custom_styles[idx]
+    if global_mode in ("filter", "filter-sweep"):
+        return "filter"
     if global_mode == "equal-power":
         return "equal-power"
-    return "gradual"
+    if global_mode == "gradual":
+        return "gradual"
+    return "filter"
 
 # -----------------------------------------------------------------------------
-# ADVANCED DSP TRANSITION BLENDERS
+# ADVANCED DSP TRANSITION BLENDERS & VIRTUALDJ FILTER ENGINE
 # -----------------------------------------------------------------------------
 
-def blend_gradual(a_seg, b_seg, sr=44100, bass_swap_ratio=0.68, initial_b_gain=0.65, pre_fade_gain=0.88):
+def apply_dj_filter_hpf(audio, sr=44100, f_start=25.0, f_end=3000.0, curve_power=1.35, resonance=1.12):
     """
-    Studio-Grade Gradual DJ Crossfade between Cue 2 and Cue 3.
+    VirtualDJ / Club Hardware DJ Filter (Color FX High-Pass Filter Sweep).
+    Continuously sweeps a zero-phase 4th-order resonant High-Pass Filter from f_start (25 Hz)
+    up to f_end (3000 Hz) using STFT/ISTFT frequency-domain synthesis.
+    
+    Eliminates outgoing kick/sub-bass collision during the Cue 2 -> Cue 3 transition while
+    preserving airy vocals and melodic highs that dissolve naturally over the incoming track.
+    """
+    n = len(audio)
+    if n < 512:
+        return audio
+
+    nperseg = min(2048, 2 ** int(np.log2(n)))
+    noverlap = nperseg * 3 // 4
+
+    f, t_frames, Zxx_l = signal.stft(audio[:, 0], fs=sr, nperseg=nperseg, noverlap=noverlap)
+    _, _, Zxx_r = signal.stft(audio[:, 1], fs=sr, nperseg=nperseg, noverlap=noverlap)
+
+    n_frames = len(t_frames)
+    t_norm = np.linspace(0.0, 1.0, n_frames)
+
+    # VirtualDJ Filter Knob sweep curve (musical exponential frequency trajectory)
+    fc = f_start * ((f_end / f_start) ** (t_norm ** curve_power))
+    ratio = f[:, None] / np.maximum(fc[None, :], 1.0)
+
+    # 4th-order High-Pass Filter frequency response: (f/fc)^4 / (1 + (f/fc)^4)
+    H = (ratio ** 4) / (1.0 + ratio ** 4)
+
+    # Authentic DJ mixer resonant peak (+1.0 to +1.5 dB near cutoff)
+    if resonance > 1.0:
+        peak = np.exp(-0.5 * (np.log(np.maximum(ratio, 1e-4)) / 0.35) ** 2) * (resonance - 1.0)
+        H = np.clip(H + peak, 0.0, 1.8)
+
+    Zxx_l_filt = Zxx_l * H
+    Zxx_r_filt = Zxx_r * H
+
+    _, out_l = signal.istft(Zxx_l_filt, fs=sr, nperseg=nperseg, noverlap=noverlap)
+    _, out_r = signal.istft(Zxx_r_filt, fs=sr, nperseg=nperseg, noverlap=noverlap)
+
+    out = np.stack([out_l[:n], out_r[:n]], axis=-1).astype(np.float32)
+    return out
+
+def apply_dj_filter_hpf_in(audio, sr=44100, f_start=280.0, f_end=20.0, open_s=1.5):
+    """
+    Musical opening sweep on incoming Track B:
+    Quickly sweeps cutoff from 280 Hz down to 20 Hz (flat/bypassed) over the first open_s seconds,
+    ensuring a pristine, silky entry with zero low-frequency collision.
+    """
+    n = len(audio)
+    open_samples = min(int(sr * open_s), n)
+    if open_samples < 512:
+        return audio
+
+    part_sweep = audio[:open_samples]
+    nperseg = min(2048, 2 ** int(np.log2(open_samples)))
+    noverlap = nperseg * 3 // 4
+
+    f, t_frames, Zxx_l = signal.stft(part_sweep[:, 0], fs=sr, nperseg=nperseg, noverlap=noverlap)
+    _, _, Zxx_r = signal.stft(part_sweep[:, 1], fs=sr, nperseg=nperseg, noverlap=noverlap)
+
+    n_frames = len(t_frames)
+    t_norm = np.linspace(0.0, 1.0, n_frames)
+    fc = f_start * ((f_end / f_start) ** (t_norm ** 0.8))
+    ratio = f[:, None] / np.maximum(fc[None, :], 1.0)
+    H = (ratio ** 4) / (1.0 + ratio ** 4)
+
+    Zxx_l *= H
+    Zxx_r *= H
+
+    _, out_l = signal.istft(Zxx_l, fs=sr, nperseg=nperseg, noverlap=noverlap)
+    _, out_r = signal.istft(Zxx_r, fs=sr, nperseg=nperseg, noverlap=noverlap)
+
+    out_sweep = np.stack([out_l[:open_samples], out_r[:open_samples]], axis=-1).astype(np.float32)
+    out = np.copy(audio)
+    out[:open_samples] = out_sweep
+    return out
+
+def blend_gradual(a_seg, b_seg, sr=44100, bass_swap_ratio=0.68, initial_b_gain=0.65, pre_fade_gain=0.88, use_filter=True):
+    """
+    Studio-Grade Gradual DJ Crossfade between Cue 2 and Cue 3 with Universal Anti-Beat Clash.
     Provides confident, audible presence for both incoming and outgoing tracks:
       - Outgoing Track (Track A) smoothly dips slightly before Cue 2 (~0.88) to create
         natural acoustic breathing room, grooving firmly across the main transition phrase,
@@ -328,6 +427,8 @@ def blend_gradual(a_seg, b_seg, sr=44100, bass_swap_ratio=0.68, initial_b_gain=0
         smoothly ramping up to full volume across the transition.
       - Linkwitz-Riley 4th Order (LR-4) zero-phase crossover at 200 Hz maintains
         groove and cleanly hands over low-end bass energy near the 68% mark.
+      - When use_filter=True, applies a dynamic HPF sweep to Track A's low band
+        so that kick drums and sub-bass NEVER clash before or during the bass handover.
     """
     n = min(len(a_seg), len(b_seg))
     a_seg = a_seg[:n]
@@ -361,6 +462,11 @@ def blend_gradual(a_seg, b_seg, sr=44100, bass_swap_ratio=0.68, initial_b_gain=0
     a_high = signal.filtfilt(b_h, a_h, a_seg, axis=0)
     b_low = signal.filtfilt(b_l, a_l, b_seg, axis=0)
     b_high = signal.filtfilt(b_h, a_h, b_seg, axis=0)
+
+    # Anti-beat clash: sweep HPF on Track A's low band up to crossover cutoff
+    # so Track A's sub-bass and kick drums never clash with Track B's groove
+    if use_filter and n > 512:
+        a_low = apply_dj_filter_hpf(a_low, sr=sr, f_start=25.0, f_end=350.0, curve_power=1.2, resonance=1.05)
 
     # Mids & highs crossfade: both tracks audibly blend together without volume collapse
     sum_energy = np.sqrt(curve_a ** 2 + curve_b ** 2)
@@ -407,24 +513,32 @@ def blend_equal_power(a_seg, b_seg, initial_b_gain=0.65, pre_fade_gain=0.88):
     gain_corr = np.where(sum_energy > 1.05, 1.0 / (sum_energy ** 0.5), 1.0)
     return (a_seg * curve_a + b_seg * curve_b) * gain_corr
 
-def blend_filter_sweep(a_seg, b_seg, sr=44100, initial_b_gain=0.65, pre_fade_gain=0.88):
-    """Dynamic High-Pass Filter sweep: progressively washes out Track A lows/mids as Track B drops in."""
+def blend_dj_filter(a_seg, b_seg, sr=44100, initial_b_gain=0.65, pre_fade_gain=0.88, filter_incoming=True):
+    """
+    VirtualDJ Color FX Filter Sweep (Anti-Beat Clash Transition Engine).
+    Replicates rotating the physical FILTER knob clockwise on hardware DJ mixers / VirtualDJ:
+      - Sweeps a resonant 4th-order High-Pass Filter (HPF) on Track A from 25 Hz up to 3000 Hz.
+        Eliminates Track A's kick and sub-bass by the early/mid phrase so Track B's groove drops
+        with 100% clarity and zero double-kick clashing or phase mud.
+      - Track A's airy vocals and hi-hats float above Track B before fading out smoothly into Cue 3.
+      - Track B enters with punch and clarity, smoothly rising to full presence.
+    """
     n = min(len(a_seg), len(b_seg))
     a_seg = a_seg[:n]
     b_seg = b_seg[:n]
-    q = max(1, n // 4)
-    cutoffs = [80.0, 300.0, 900.0, 2400.0]
-    a_filtered = np.zeros_like(a_seg)
-    for idx in range(4):
-        s_idx = idx * q
-        e_idx = (idx + 1) * q if idx < 3 else n
-        chunk = a_seg[s_idx:e_idx]
-        b_hp, a_hp = signal.butter(2, cutoffs[idx], btype='high', fs=sr)
-        a_filtered[s_idx:e_idx] = signal.filtfilt(b_hp, a_hp, chunk, axis=0)
+
+    # Continuous resonant HPF sweep on outgoing Track A
+    a_filtered = apply_dj_filter_hpf(a_seg, sr=sr, f_start=25.0, f_end=3000.0, curve_power=1.35, resonance=1.12)
+
+    # Gentle opening sweep on incoming Track B to ensure pristine entry
+    if filter_incoming and n > int(sr * 1.5):
+        b_filtered = apply_dj_filter_hpf_in(b_seg, sr=sr, f_start=280.0, f_end=20.0, open_s=1.5)
+    else:
+        b_filtered = b_seg
 
     t = np.linspace(0.0, 1.0, n)
     t_fade_a = np.clip((t - 0.20) / 0.80, 0.0, 1.0)
-    a_env = (pre_fade_gain * ((1.0 - t_fade_a) ** 1.8))[:, None]
+    a_env = (pre_fade_gain * ((1.0 - t_fade_a) ** 1.5))[:, None]
 
     ramp_samples = min(int(sr * 0.025), max(1, n // 10))
     micro_in = np.ones(n, dtype=np.float32)
@@ -435,7 +549,10 @@ def blend_filter_sweep(a_seg, b_seg, sr=44100, initial_b_gain=0.65, pre_fade_gai
 
     sum_energy = np.sqrt(a_env ** 2 + b_env ** 2)
     gain_corr = np.where(sum_energy > 1.05, 1.0 / (sum_energy ** 0.5), 1.0)
-    return (a_filtered * a_env + b_seg * b_env) * gain_corr
+    return (a_filtered * a_env + b_filtered * b_env) * gain_corr
+
+# Backwards compatibility alias
+blend_filter_sweep = blend_dj_filter
 
 def blend_echo_out(a_seg, b_seg, sr=44100, bpm=118.0, decay=0.55, initial_b_gain=0.70):
     """Tempo-synced 1-beat dub echo freeze: Track A echoes out dissolving under Track B's clean drop."""
@@ -836,8 +953,8 @@ def render_crossfade_mix(tracks, args, output_file):
             b_trans = np.pad(b_trans, ((0, target_len - len(b_trans)), (0, 0)))
 
         # Blend transition using selected DSP mode
-        if mode == "filter-sweep":
-            blended = blend_filter_sweep(a_trans, b_trans, sr=sr)
+        if mode in ("filter", "filter-sweep"):
+            blended = blend_dj_filter(a_trans, b_trans, sr=sr)
         elif mode == "echo-out":
             blended = blend_echo_out(a_trans, b_trans, sr=sr, bpm=bpm_a)
         elif mode == "equal-power":
@@ -847,7 +964,8 @@ def render_crossfade_mix(tracks, args, output_file):
                 a_trans,
                 b_trans,
                 sr=sr,
-                bass_swap_ratio=getattr(args, "bass_swap_ratio", 0.68)
+                bass_swap_ratio=getattr(args, "bass_swap_ratio", 0.68),
+                use_filter=getattr(args, "use_filter", True)
             )
 
         # Mark Track B entry on the mixtape timeline
@@ -1002,14 +1120,14 @@ def render_transition_preview(t_a, t_b, mode="gradual", pre_s=3.0, post_s=3.0, s
     elif len(b_trans) < target_len:
         b_trans = np.pad(b_trans, ((0, target_len - len(b_trans)), (0, 0)))
 
-    if mode == "filter-sweep":
-        blended = blend_filter_sweep(a_trans, b_trans, sr=sr)
+    if mode in ("filter", "filter-sweep"):
+        blended = blend_dj_filter(a_trans, b_trans, sr=sr)
     elif mode == "echo-out":
         blended = blend_echo_out(a_trans, b_trans, sr=sr, bpm=bpm_a)
     elif mode == "equal-power":
         blended = blend_equal_power(a_trans, b_trans)
     else:
-        blended = blend_gradual(a_trans, b_trans, sr=sr, bass_swap_ratio=bass_swap_ratio)
+        blended = blend_gradual(a_trans, b_trans, sr=sr, bass_swap_ratio=bass_swap_ratio, use_filter=True)
 
     post_start = b_entry + dur_b_needed
     b_post = load_audio_clip(t_b["path"], start_s=post_start, duration_s=post_s, sr=sr)

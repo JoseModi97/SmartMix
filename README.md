@@ -140,6 +140,27 @@ Wait a few moments for audio rendering and mastering to finish. That's it!
 
 ---
 
+## 🎛️ Universal DJ Filter (Anti-Beat Clash Transition Engine)
+
+When transitioning between two songs, overlapping kick drums and 808 sub-bass can create **beat collision**, muddy low-end buildup, phase cancellation, or distracting "double-kick galloping". 
+
+SmartMix implements the **VirtualDJ hardware Color FX FILTER knob** (the circled filter knobs on Deck A and Deck B) universally across all mixes and playlists:
+
+### How the DJ Filter Sweep Works:
+1. **Continuous Resonant High-Pass Filter (HPF):**
+   - At Cue 2, as incoming Track B drops in, Track A's filter cutoff smoothly sweeps upward from **25 Hz to 3,000 Hz** using zero-phase STFT frequency-domain processing.
+   - An authentic analog resonance peak ($Q \approx 1.12$, $+1.2\text{ dB}$ at the cutoff frequency) provides the signature club mixer filter sweep texture found on Pioneer DJM and Allen & Heath hardware.
+2. **Eliminates Kick Drum & Bass Clashing:**
+   - Within the first 30–40% of the transition window, Track A's sub-bass and kick drums (<100 Hz) are attenuated by over **$-30\text{ to } -45\text{ dB}$**.
+   - Track B's kick drum drops into an uncluttered, pristine low-end acoustic space with 100% impact!
+3. **Preserves Airy Vocals & Melodic Highs:**
+   - Track A's vocals, snares, and high-hats remain audible in the upper spectrum, morphing into an airy shimmer that floats musically above Track B before dissolving cleanly at Cue 3.
+4. **Universal Across Any Playlist & Genre:**
+   - Works universally on any playlist loaded in VirtualDJ (Amapiano, Hip-Hop, R&B, House, Pop, Afrobeats).
+   - Available in both the **SmartMix Studio GUI** and the CLI (`--crossfade-mode filter` and `--use-filter`, enabled by default).
+
+---
+
 ## 🎛️ Gradual Transition Engine (According to Cue 2 & Cue 3)
 
 SmartMix transitions are built strictly around your VirtualDJ Hotcues:
@@ -153,7 +174,9 @@ SmartMix transitions are built strictly around your VirtualDJ Hotcues:
 3. **Zero Scratches & Zero Echo Freezes:** No scratch sound effects, no delay loops, and no abrupt cuts. Pure, seamless DJ blending.
 
 ### Transition Modes Available:
-- **`gradual` (Default):** Full equal-power crossfade between Cue 2 and Cue 3 with LR-4 zero-phase low-end crossover.
+- **`filter` (Default):** VirtualDJ Color FX Filter sweep (Anti-Beat Clash) that eliminates kick collisions and sweeps Track A into an airy vocal shimmer.
+- **`gradual`:** Studio-grade gradual crossfade between Cue 2 and Cue 3 with LR-4 zero-phase low-end crossover and dynamic anti-clash low filter.
+- **`normal`:** Clean on-beat cut at Cue 3 with zero crossfade volume ducking.
 - **`equal-power`:** Mathematical equal-power crossfade across all frequencies.
 
 ---

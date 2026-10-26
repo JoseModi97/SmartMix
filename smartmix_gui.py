@@ -49,19 +49,19 @@ if ctk is not None:
     ctk.set_default_color_theme("blue")
 
 TRANSITION_MODES = [
+    "VirtualDJ Filter Sweep (Anti-Beat Clash)",
     "Gradual DJ Crossfade",
     "Normal Cut (Hear Out to Cue 3)",
     "Immediate Cut (Drop)",
-    "Filter-Sweep Wash",
     "Echo-Out Decay",
     "Equal-Power Blend"
 ]
 
 MODE_TO_CLI = {
+    "VirtualDJ Filter Sweep (Anti-Beat Clash)": "filter",
     "Gradual DJ Crossfade": "gradual",
     "Normal Cut (Hear Out to Cue 3)": "normal",
     "Immediate Cut (Drop)": "immediate",
-    "Filter-Sweep Wash": "filter-sweep",
     "Echo-Out Decay": "echo-out",
     "Equal-Power Blend": "equal-power"
 }
@@ -287,6 +287,19 @@ class SmartMixApp:
         else:
             self.tp_var = tk.StringVar(value="-1.5 dBTP")
 
+        # Universal Anti-Beat Clash DJ Filter Checkbox
+        self.use_filter_var = tk.BooleanVar(value=True)
+        chk_filter_row = ctk.CTkFrame(settings_card, fg_color="transparent") if ctk else tk.Frame(settings_card)
+        chk_filter_row.pack(fill="x", padx=14, pady=(0, 4))
+        if ctk:
+            ctk.CTkCheckBox(
+                chk_filter_row,
+                text="🎛️ VirtualDJ Color FX Filter (Sweep away outgoing kicks to eliminate beat clashing across transitions)",
+                variable=self.use_filter_var,
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color="#38bdf8"
+            ).pack(side="left")
+
         # Scratch preview checkbox
         self.with_scratch_var = tk.BooleanVar(value=False)
         chk_row = ctk.CTkFrame(settings_card, fg_color="transparent") if ctk else tk.Frame(settings_card)
@@ -491,7 +504,7 @@ class SmartMixApp:
             default_style = "Immediate Cut (Drop)"
         else:
             detail_text = f"Cue 2 ({fade_time}) ➔ Cue 3 ({exit_time}) [{dur_s:.1f}s] | {bpm_a:.1f} ➔ {bpm_b:.1f} BPM"
-            default_style = "Gradual DJ Crossfade"
+            default_style = "VirtualDJ Filter Sweep (Anti-Beat Clash)"
 
         if ctk:
             ctk.CTkLabel(info_col, text=main_text, font=ctk.CTkFont(size=12, weight="bold"), anchor="w").pack(anchor="w")
@@ -682,10 +695,13 @@ class SmartMixApp:
             "--mix-name", mix_name,
             "--output-file", out_file,
             "--mode", "crossfade",
+            "--crossfade-mode", "filter",
             "--trans-style", trans_style_arg,
             "--target-lufs", str(target_lufs),
             "--true-peak", str(true_peak)
         ]
+        if hasattr(self, "use_filter_var") and not self.use_filter_var.get():
+            cmd.append("--no-filter")
         if with_scratch:
             cmd.append("--with-scratch-preview")
 

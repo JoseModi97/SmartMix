@@ -63,9 +63,21 @@ def parse_args():
     parser.add_argument(
         "--crossfade-mode",
         type=str,
-        default="gradual",
-        choices=["gradual", "equal-power"],
-        help="Global crossfade transition style (default: gradual, smooth Cue 2 to Cue 3 crossfade with LR-4 bass crossover)"
+        default="filter",
+        choices=["filter", "gradual", "equal-power"],
+        help="Global crossfade transition style: 'filter' (default: VirtualDJ Color FX Filter sweep to eliminate beat clash), 'gradual' (Cue 2 to Cue 3 gradual crossfade), 'equal-power'"
+    )
+    parser.add_argument(
+        "--use-filter",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Universal VirtualDJ Color FX Filter sweep to eliminate beat and bass clashing during transitions (default: True)"
+    )
+    parser.add_argument(
+        "--no-filter",
+        dest="use_filter",
+        action="store_false",
+        help=argparse.SUPPRESS
     )
     parser.add_argument(
         "--trans-style",

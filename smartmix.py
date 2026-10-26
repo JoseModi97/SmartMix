@@ -145,28 +145,10 @@ def parse_args():
         action="store_true",
         help="If track has 4+ cues, automatically use the final 2 cues for the fade-out window"
     )
-    parser.add_argument(
-        "--natural-cues",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Intelligent musical phrase-quantization and cue repair (auto-corrects 0s cuts, micro-fades, and silent intros to natural 8-bar / 4-bar downbeat drops, default: True)"
-    )
-    parser.add_argument(
-        "--optimize-vdj-cues",
-        action="store_true",
-        help="Permanently write natural, phrase-aligned cues back to VirtualDJ's database.xml (with automatic timestamped safety backup)"
-    )
     return parser.parse_args()
 
 def run_all_in_one():
     args = parse_args()
-
-    if args.optimize_vdj_cues:
-        print("=" * 78)
-        print(" OPTIMIZING VIRTUALDJ DATABASE CUES (database.xml)")
-        print("=" * 78)
-        success, msg = gm.optimize_vdj_cues(backup=True, playlist_only=True)
-        print(f"Result: {msg}")
 
     print("=" * 78)
     print(" SMARTMIX: UNIFIED ALL-IN-ONE DJ COMPILATION MASTER PIPELINE")
@@ -174,7 +156,6 @@ def run_all_in_one():
     print(f"Loudness Target  : {args.target_lufs:.1f} LUFS (Industry DJ/Club Reference)")
     print(f"True Peak Ceiling: {args.true_peak:.1f} dBTP (Inter-Sample Headroom Margin)")
     print(f"Compilation Mode : {args.mode.upper()} ({'Clean Cue-Drop Transitions (Zero Crossfade)' if args.mode == 'normal' else 'Gradual Cue 2 -> Cue 3 Crossfade' if args.mode == 'crossfade' else 'Both Normal & Crossfaded Sets'})")
-    print(f"Natural Phrasing : {'ENABLED (Automatic Phrase Alignment & Beat-Drop Detection)' if getattr(args, 'natural_cues', True) else 'DISABLED (Raw Cues)'}")
     print("-" * 78)
 
     # -------------------------------------------------------------------------

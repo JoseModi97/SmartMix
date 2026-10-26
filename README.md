@@ -18,38 +18,13 @@ You can run SmartMix using a sleek, modern dark-themed desktop interface:
   ```
 
 ### Key Features of the User Interface:
-1. **Custom Export Name:** Easily set the title or genre for your mix (e.g. `Afrobeats`, `Amapiano`, `Y2K`, `Deep House`). Output files are automatically named accordingly.
+1. **Custom Export Name:** Easily set the title or genre for your mix (e.g. `Afrobeats`, `Amapiano`, `Deep House 2026`). Output files are automatically named accordingly.
 2. **Custom Destination Directory:** Click **"📂 Browse..."** to select any folder or drive on your PC. It displays a live preview of the target file path.
 3. **Live VirtualDJ Automix Queue Table:** Displays all queued tracks, BPMs, Cue 1 (In), Cue 2 (Fade Out), Cue 3 (Cut Out), and durations.
-4. **VirtualDJ Cue Optimizer ("⚡ Optimize Cues (VDJ)"):** Automatically aligns playlist Hotcues to 8-bar musical phrase boundaries and song beat drops, creating a safety backup of `database.xml`.
-5. **Instant Playlist Reload ("🔄 Reload VirtualDJ"):** Click to immediately reload track information if you modify the playlist in VirtualDJ.
-6. **Interactive Transition Director:** Audition and select custom transitions per song pair (VirtualDJ Flanger, Reverb Wash, End-Filter sweeps, Echo-Out, Vinyl Brake, Immediate Cut).
-7. **Natural Phrase Alignment Checkbox:** Automatically snaps transitions to 8-bar / 4-bar downbeat drops and repairs defective cues during mix compilation.
-8. **Mastering Controls:** Select target loudness (`-14.0 LUFS` DJ/Club standard) and true-peak ceiling (`-1.5 dBTP`).
-9. **Live Compilation Terminal:** Streams real-time progress, time-stretching, DSP transitions, and EBU R128 mastering logs.
-10. **1-Click Completion Actions:** Instantly click **"📂 Open Export Folder"** or **"▶ Play Mix in Audio Player"** when done.
-
----
-
-## 🎵 Natural Phrasing & VirtualDJ Cue Adjustment
-
-### Why Transitions Sometimes Sound Unnatural in VirtualDJ
-In DJ mixing, transitions sound jarring or awkward when:
-1. **0-Second Chops:** Cue 2 and Cue 3 are placed at the exact same timestamp (e.g. `144.78s -> 144.78s`), causing an instantaneous cut instead of a transition.
-2. **Micro-Fades:** Cue 2 is placed only 1–2 seconds before Cue 3 (less than 1 musical bar), sounding clipped.
-3. **Silent / Spoken Intros (Beat Clashes):** Cue 1 is placed at `00:00` while the song has 10–18 seconds of speech, hypeman banter, or silence before the drums drop. Track A fades out, leaving no beat before the drums suddenly kick in mid-song.
-4. **Phrase Misalignment:** Transitions do not start and end on 4-bar (16-beat) or 8-bar (32-beat) musical boundaries.
-
-### How SmartMix Solves This:
-1. **Automatic In-Memory Phrase Quantization (`--natural-cues`, Default On):**
-   SmartMix automatically inspects the automix beatgrid (`cutStart`, `cutEnd`, `Phase`) for every song. If broken cues or spoken intros are detected, SmartMix automatically snaps the entry point to the actual beat drop and spaces Cue 2 to Cue 3 by a natural 8-bar (32-beat) window.
-2. **Direct VirtualDJ Database Optimization (`--optimize-vdj-cues`):**
-   You can permanently write phrase-aligned cues back to VirtualDJ's `database.xml`:
-   ```bash
-   python smartmix.py --optimize-vdj-cues
-   ```
-   *(Or click **"⚡ Optimize Cues (VDJ)"** in SmartMix Studio).*
-   A timestamped safety backup is automatically created (e.g. `database.xml.bak_20261026_091625`).
+4. **Instant Playlist Reload ("🔄 Reload from VirtualDJ"):** Click to immediately reload track information if you modify the playlist in VirtualDJ.
+5. **Transition & Loudness Controls:** Select transition style (`Gradual Cue 2 -> Cue 3 Crossfade` or `Equal-Power`), loudness target (`-14.0 LUFS`), and true-peak limiter.
+6. **Live Compilation Terminal:** Streams real-time progress, time-stretching, DSP transitions, and EBU R128 mastering logs.
+7. **1-Click Completion Actions:** Instantly click **"📂 Open Export Folder"** or **"▶ Play Mix in Audio Player"** when done.
 
 ---
 

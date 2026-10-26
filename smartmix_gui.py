@@ -235,23 +235,13 @@ class SmartMixApp:
 
         btn_reload = ctk.CTkButton(
             queue_top,
-            text="🔄 Reload VirtualDJ",
-            width=150,
+            text="🔄 Reload from VirtualDJ",
+            width=170,
             fg_color="#334155",
             hover_color="#475569",
             command=lambda: self.refresh_playlist(show_alert=True)
         ) if ctk else tk.Button(queue_top, text="Reload", command=lambda: self.refresh_playlist(show_alert=True))
         btn_reload.pack(side="right")
-
-        btn_opt_cues = ctk.CTkButton(
-            queue_top,
-            text="⚡ Optimize Cues (VDJ)",
-            width=165,
-            fg_color="#059669",
-            hover_color="#047857",
-            command=self.optimize_cues_action
-        ) if ctk else tk.Button(queue_top, text="Optimize Cues", command=self.optimize_cues_action)
-        btn_opt_cues.pack(side="right", padx=(0, 6))
 
         # ---------------------------------------------------------------------
         # CARD 3: TRANSITION DIRECTOR & AUDITION STUDIO
@@ -324,19 +314,6 @@ class SmartMixApp:
                 variable=self.use_filter_var,
                 font=ctk.CTkFont(size=12, weight="bold"),
                 text_color="#38bdf8"
-            ).pack(side="left")
-
-        # Natural Musical Phrase Alignment Checkbox
-        self.natural_cues_var = tk.BooleanVar(value=True)
-        chk_nat_row = ctk.CTkFrame(settings_card, fg_color="transparent") if ctk else tk.Frame(settings_card)
-        chk_nat_row.pack(fill="x", padx=14, pady=(0, 4))
-        if ctk:
-            ctk.CTkCheckBox(
-                chk_nat_row,
-                text="🎵 Natural Musical Phrase Alignment (Auto-snap to 8-bar / 4-bar downbeat drops & fix broken cuts)",
-                variable=self.natural_cues_var,
-                font=ctk.CTkFont(size=12, weight="bold"),
-                text_color="#a7f3d0"
             ).pack(side="left")
 
         # Scratch preview checkbox
@@ -457,26 +434,6 @@ class SmartMixApp:
         if chosen:
             self.dest_var.set(chosen)
 
-    def optimize_cues_action(self):
-        """Prompts user and writes phrase-aligned cues into VirtualDJ's database.xml."""
-        confirm = messagebox.askyesno(
-            "Optimize VirtualDJ Cues",
-            "This will create a timestamped safety backup of your VirtualDJ database (database.xml) and update Hotcues 1, 2, and 3 for playlist tracks:\n\n"
-            "• Cue 1: Snaps to the musical beat drop (drums start)\n"
-            "• Cue 2: Sets transition start 8 bars (32 beats) before Cue 3\n"
-            "• Cue 3: Mix exit aligned to phrase downbeats\n\n"
-            "Proceed with optimization?"
-        )
-        if not confirm:
-            return
-
-        success, msg = gm.optimize_vdj_cues(backup=True, playlist_only=True)
-        if success:
-            messagebox.showinfo("Optimization Complete", msg)
-            self.refresh_playlist(show_alert=False)
-        else:
-            messagebox.showerror("Optimization Error", msg)
-
     def refresh_playlist(self, show_alert=False):
         """Scans VirtualDJ Automix queue, populates metadata, and builds transition controls."""
         class DummyArgs:
@@ -484,7 +441,6 @@ class SmartMixApp:
             fade_cue = 2
             exit_cue = 3
             use_last_cues = False
-            natural_cues = getattr(self, "natural_cues_var", None) and self.natural_cues_var.get()
 
         self.stop_audition()
 
@@ -767,8 +723,6 @@ class SmartMixApp:
         ]
         if hasattr(self, "use_filter_var") and not self.use_filter_var.get():
             cmd.append("--no-filter")
-        if hasattr(self, "natural_cues_var") and not self.natural_cues_var.get():
-            cmd.append("--no-natural-cues")
         if with_scratch:
             cmd.append("--with-scratch-preview")
 

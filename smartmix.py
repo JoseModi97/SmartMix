@@ -49,9 +49,9 @@ def parse_args():
     parser.add_argument(
         "--mode",
         type=str,
-        default="both",
-        choices=["both", "normal", "crossfade"],
-        help="Transition mode: 'both' (default: renders both Normal and Crossfaded mixes), 'normal' (clean cue transitions to Cue 3), or 'crossfade' (gradual crossfade)"
+        default="continuous",
+        choices=["continuous", "crossfade", "normal", "both"],
+        help="Compilation mode: 'continuous' (default: premier Continuous Mix with VirtualDJ FX & End-Filter), 'normal' (clean cue drops), or 'both'"
     )
     parser.add_argument(
         "--normal-cutoff",
@@ -62,10 +62,18 @@ def parse_args():
     )
     parser.add_argument(
         "--crossfade-mode",
+        "--transition-mode",
+        dest="crossfade_mode",
         type=str,
-        default="filter",
-        choices=["filter", "gradual", "equal-power"],
-        help="Global crossfade transition style: 'filter' (default: VirtualDJ Color FX Filter sweep to eliminate beat clash), 'gradual' (Cue 2 to Cue 3 gradual crossfade), 'equal-power'"
+        default="auto",
+        choices=["auto", "flanger", "reverb", "filter", "echo-out", "brake", "gradual", "equal-power"],
+        help="Global transition style: 'auto' (default: intelligent VirtualDJ FX per transition phrase), 'flanger', 'reverb', 'filter', 'echo-out', 'brake'"
+    )
+    parser.add_argument(
+        "--filter-start",
+        type=float,
+        default=0.58,
+        help="Position within transition phrase where the filter sweep engages towards the end (default: 0.58 = 58%% mark)"
     )
     parser.add_argument(
         "--use-filter",
@@ -173,20 +181,20 @@ def run_all_in_one():
         print(f"      BPM: {t['bpm']:.1f} | Cues: {cues_count} | Entry: {gm.format_time(t['cue_entry'])} | Fade/Cut: {gm.format_time(t['cue_fade'])} | Outro: {gm.format_time(t['cue_exit'])}")
 
     if args.output_file and args.output_file.strip():
-        crossfade_out = args.output_file.strip()
-        normal_out = os.path.splitext(crossfade_out)[0] + "_Normal.mp3"
-        args.output_dir = os.path.dirname(crossfade_out)
+        continuous_out = args.output_file.strip()
+        normal_out = os.path.splitext(continuous_out)[0] + "_Normal.mp3"
+        args.output_dir = os.path.dirname(continuous_out)
     else:
+        continuous_out = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix.mp3")
         normal_out = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Normal.mp3")
-        crossfade_out = os.path.join(args.output_dir, f"{args.mix_name}_Continuous_Mix_Crossfaded.mp3")
     scratch_out = os.path.join(args.output_dir, f"{args.mix_name}_DJ_Scratch_Preview.mp3")
 
     # -------------------------------------------------------------------------
-    # STEP 2: COMPILE NORMAL CUT MIX (ZERO CROSSFADE) IF REQUESTED
+    # STEP 2: COMPILE NORMAL CUT MIX IF REQUESTED
     # -------------------------------------------------------------------------
     if args.mode in ("normal", "both"):
         print("\n" + "=" * 78)
-        print(" COMPILING NORMAL CONTINUOUS MIX (CLEAN CUE DROPS, ZERO CROSSFADE)")
+        print(" COMPILING NORMAL MIX (CLEAN CUE DROPS, ZERO DUCKING)")
         print("=" * 78)
         success_nm = gm.render_normal_mix(tracks, args, normal_out)
         if not success_nm:
@@ -194,15 +202,15 @@ def run_all_in_one():
             return False
 
     # -------------------------------------------------------------------------
-    # STEP 3: COMPILE SMART CROSSFADED MIX (GRADUAL BLEND) IF REQUESTED
+    # STEP 3: COMPILE MASTER CONTINUOUS MIX (VIRTUALDJ FX & END-FILTER)
     # -------------------------------------------------------------------------
-    if args.mode in ("crossfade", "both"):
+    if args.mode in ("continuous", "crossfade", "both"):
         print("\n" + "=" * 78)
-        print(" COMPILING SMART CROSSFADED CONTINUOUS MIX (GRADUAL DJ TRANSITIONS)")
+        print(" COMPILING SMART CONTINUOUS MIX (VIRTUALDJ FX & END-FILTER SWEEPS)")
         print("=" * 78)
-        success_cf = gm.render_crossfade_mix(tracks, args, crossfade_out)
-        if not success_cf:
-            print("ERROR: Crossfaded mix compilation failed!")
+        success_cm = gm.render_continuous_mix(tracks, args, continuous_out)
+        if not success_cm:
+            print("ERROR: Continuous mix compilation failed!")
             return False
 
     # -------------------------------------------------------------------------
@@ -236,18 +244,19 @@ def run_all_in_one():
     print("\n" + "=" * 78)
     print(" SMARTMIX CONTINUOUS MIX SUCCESSFULLY COMPILED!")
     print("=" * 78)
+    if args.mode in ("continuous", "crossfade", "both") and os.path.exists(continuous_out):
+        cm_mb = os.path.getsize(continuous_out) / (1024 * 1024)
+        print(" 1. Master Continuous Mix (VirtualDJ FX & End-Filter): " + continuous_out + f" ({cm_mb:.2f} MB)")
     if args.mode in ("normal", "both") and os.path.exists(normal_out):
         nm_mb = os.path.getsize(normal_out) / (1024 * 1024)
-        print(" 1. Normal Transition Mix (Hear Out to Cue 3): " + normal_out + f" ({nm_mb:.2f} MB)")
-    if args.mode in ("crossfade", "both") and os.path.exists(crossfade_out):
-        cf_mb = os.path.getsize(crossfade_out) / (1024 * 1024)
-        print(" 2. Crossfaded Mix (Gradual Blend):            " + crossfade_out + f" ({cf_mb:.2f} MB)")
+        print(" 2. Normal Transition Mix (Hear Out to Cue 3):         " + normal_out + f" ({nm_mb:.2f} MB)")
     if args.with_scratch_preview and os.path.exists(scratch_out):
         sc_mb = os.path.getsize(scratch_out) / (1024 * 1024)
-        print(" 3. DJ Scratch Preview                         : " + scratch_out + f" ({sc_mb:.2f} MB)")
+        print(" 3. DJ Scratch Preview                                 : " + scratch_out + f" ({sc_mb:.2f} MB)")
     print(f"\n Master Audio Standards  : {args.target_lufs:.1f} LUFS Integrated, Max True Peak {args.true_peak:.1f} dBTP")
-    print(f" Transition Profile      : {'Both (Normal Outro + Gradual Crossfade)' if args.mode == 'both' else 'Clean On-Beat Cue Drops to Cue 3' if args.mode == 'normal' else 'Gradual Cue 2 -> Cue 3 DJ Crossfade'}")
+    print(f" Transition Profile      : Continuous DJ Transitions with VirtualDJ FX & End-Filter")
     print("=" * 78)
+    return True
     return True
 
 if __name__ == "__main__":

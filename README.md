@@ -140,44 +140,47 @@ Wait a few moments for audio rendering and mastering to finish. That's it!
 
 ---
 
-## 🎛️ Universal DJ Filter (Anti-Beat Clash Transition Engine)
+## 🎛️ Continuous DJ Mix Engine (VirtualDJ FX & End-Filter Transitions)
 
-When transitioning between two songs, overlapping kick drums and 808 sub-bass can create **beat collision**, muddy low-end buildup, phase cancellation, or distracting "double-kick galloping". 
+SmartMix replaces traditional volume-ducking crossfaders with a studio-grade **Continuous DJ Mix Engine**:
+- Both tracks maintain **full continuous presence and groove** across the transition phrase with zero volume dips or weak energy.
+- Over long transitions (e.g. 8 bars / 32 beats, $12\text{–}20\text{s}$), SmartMix utilizes the signature **VirtualDJ Deck FX** (highlighted in VirtualDJ's effects menu):
+  - **🎛️ VirtualDJ Flanger:** Modulated comb-filter jet sweep that builds intense energy and movement across the transition phrase.
+  - **🌌 VirtualDJ Space Reverb Wash:** Expands the outgoing track into a wide, lush spatial ambient cloud before Cue 3.
+  - **🔁 VirtualDJ Echo-Out:** Tempo-synced dub delay freeze catching the final phrase and decaying gracefully into Track B.
+  - **🛑 VirtualDJ Vinyl Brake:** Turntable motor stop deceleration on sudden cuts and drops.
 
-SmartMix implements the **VirtualDJ hardware Color FX FILTER knob** (the circled filter knobs on Deck A and Deck B) universally across all mixes and playlists:
-
-### How the DJ Filter Sweep Works:
-1. **Continuous Resonant High-Pass Filter (HPF):**
-   - At Cue 2, as incoming Track B drops in, Track A's filter cutoff smoothly sweeps upward from **25 Hz to 3,000 Hz** using zero-phase STFT frequency-domain processing.
-   - An authentic analog resonance peak ($Q \approx 1.12$, $+1.2\text{ dB}$ at the cutoff frequency) provides the signature club mixer filter sweep texture found on Pioneer DJM and Allen & Heath hardware.
-2. **Eliminates Kick Drum & Bass Clashing:**
-   - Within the first 30–40% of the transition window, Track A's sub-bass and kick drums (<100 Hz) are attenuated by over **$-30\text{ to } -45\text{ dB}$**.
-   - Track B's kick drum drops into an uncluttered, pristine low-end acoustic space with 100% impact!
-3. **Preserves Airy Vocals & Melodic Highs:**
-   - Track A's vocals, snares, and high-hats remain audible in the upper spectrum, morphing into an airy shimmer that floats musically above Track B before dissolving cleanly at Cue 3.
+### 🎛️ How the End-Filter Sweep Works:
+1. **Filter Appears Towards the End:**
+   - Instead of draining the song prematurely, the resonant High-Pass Filter engages **towards the end** of the transition phrase (at the $\approx 58\%$ mark).
+   - In the first half ($0\text{–}58\%$), both tracks groove together with full fidelity, bass, and presence.
+   - Across the final $42\%$ leading into Cue 3, the resonant HPF sweeps up from **25 Hz to 3,200 Hz**, completely eradicating Track A's kick drum and bass before Cue 3.
+2. **Zero Kick & Bass Clashing:**
+   - By the time Track B reaches full dominance, Track A's kick drum is attenuated by over **$-45\text{ dB}$**, eliminating any double-kick galloping or phase cancellation.
+3. **Preserves Airy Vocal Tail:**
+   - Track A's vocals, snares, and flanged/reverbed highs float smoothly above Track B before dissolving into total silence as Cue 3 hits.
 4. **Universal Across Any Playlist & Genre:**
-   - Works universally on any playlist loaded in VirtualDJ (Amapiano, Hip-Hop, R&B, House, Pop, Afrobeats).
-   - Available in both the **SmartMix Studio GUI** and the CLI (`--crossfade-mode filter` and `--use-filter`, enabled by default).
+   - Works universally on any playlist loaded in VirtualDJ.
+   - Automatically analyzes transition phrase lengths (immediate cuts, short drops, or long 8-bar flanger/reverb builds).
+   - Master output is a single unified Continuous Mix: `<MixName>_Continuous_Mix.mp3`.
 
 ---
 
-## 🎛️ Gradual Transition Engine (According to Cue 2 & Cue 3)
+## 🎛️ DJ Transitions According to Cue 2 & Cue 3
 
 SmartMix transitions are built strictly around your VirtualDJ Hotcues:
 - **Cue 1 (`In` / `Entry`):** Where the track starts playing.
-- **Cue 2 (`Fade Out` / `Mix Out`):** The exact beat where the crossfade starts. Track A is at 100% volume; Track B starts fading in at 0% volume.
-- **Cue 3 (`Cut` / `Exit`):** The exact beat where the crossfade completes. Track A reaches 0% volume and stops completely; Track B reaches 100% volume.
-
-### How the Gradual Transition Works:
-1. **Mathematical Equal-Power Crossfade:** Outgoing Track A follows $\cos(t \cdot \pi / 2)$ down to 0%, while incoming Track B follows $\sin(t \cdot \pi / 2)$ up to 100%. Total acoustic power remains steady throughout the transition with zero volume dips or sudden spikes.
-2. **Linkwitz-Riley LR-4 Bass Crossover (Zero Low-End Mud):** Low frequencies (<220 Hz) smoothly hand over across the midpoint. Vocals, synths, and high hats blend gradually across the entire duration between Cue 2 and Cue 3, while kicks and sub-bass swap cleanly without clashing or phasing.
-3. **Zero Scratches & Zero Echo Freezes:** No scratch sound effects, no delay loops, and no abrupt cuts. Pure, seamless DJ blending.
+- **Cue 2 (`Fade Out` / `Mix Out`):** The exact beat where the transition window starts. Both tracks groove continuously.
+- **Cue 3 (`Cut` / `Exit`):** The exact beat where the transition completes. Track A reaches 0% volume and stops completely; Track B takes over solo.
 
 ### Transition Modes Available:
-- **`filter` (Default):** VirtualDJ Color FX Filter sweep (Anti-Beat Clash) that eliminates kick collisions and sweeps Track A into an airy vocal shimmer.
-- **`gradual`:** Studio-grade gradual crossfade between Cue 2 and Cue 3 with LR-4 zero-phase low-end crossover and dynamic anti-clash low filter.
-- **`normal`:** Clean on-beat cut at Cue 3 with zero crossfade volume ducking.
-- **`equal-power`:** Mathematical equal-power crossfade across all frequencies.
+- **`auto` (Default):** Smart playlist analysis: automatically applies **Flanger + End-Filter** or **Reverb Wash + End-Filter** on long transitions (>12s), and clean End-Filter sweeps on short transitions.
+- **`flanger`:** VirtualDJ Flanger jet comb-filter build + End-Filter sweep.
+- **`reverb`:** VirtualDJ Space Reverb ambient wash + End-Filter sweep.
+- **`filter`:** VirtualDJ Color FX Filter sweep towards the end.
+- **`echo-out`:** Tempo-synced dub delay freeze.
+- **`brake`:** Turntable vinyl brake stop.
+- **`immediate`:** Clean on-beat cut at Cue 3 (for tracks marked Cue 2 == Cue 3).
 
 ---
 

@@ -49,21 +49,37 @@ if ctk is not None:
     ctk.set_default_color_theme("blue")
 
 TRANSITION_MODES = [
-    "VirtualDJ Filter Sweep (Anti-Beat Clash)",
-    "Gradual DJ Crossfade",
-    "Normal Cut (Hear Out to Cue 3)",
-    "Immediate Cut (Drop)",
-    "Echo-Out Decay",
-    "Equal-Power Blend"
+    "VirtualDJ Flanger + End-Filter (Best for Long)",
+    "VirtualDJ Reverb Wash + End-Filter",
+    "VirtualDJ Filter Sweep (Towards End)",
+    "VirtualDJ Echo-Out Decay",
+    "VirtualDJ Vinyl Brake Stop",
+    "Immediate Cut (Drop on Cue 3)"
 ]
 
 MODE_TO_CLI = {
+    "VirtualDJ Flanger + End-Filter (Best for Long)": "flanger",
+    "VirtualDJ Reverb Wash + End-Filter": "reverb",
+    "VirtualDJ Filter Sweep (Towards End)": "filter",
+    "VirtualDJ Echo-Out Decay": "echo-out",
+    "VirtualDJ Vinyl Brake Stop": "brake",
+    "Immediate Cut (Drop on Cue 3)": "immediate",
+    # Aliases
+    "Auto (Smart VirtualDJ FX & End-Filter)": "auto",
     "VirtualDJ Filter Sweep (Anti-Beat Clash)": "filter",
-    "Gradual DJ Crossfade": "gradual",
+    "Gradual DJ Crossfade": "filter",
     "Normal Cut (Hear Out to Cue 3)": "normal",
     "Immediate Cut (Drop)": "immediate",
-    "Echo-Out Decay": "echo-out",
     "Equal-Power Blend": "equal-power"
+}
+
+CLI_TO_MODE = {
+    "flanger": "VirtualDJ Flanger + End-Filter (Best for Long)",
+    "reverb": "VirtualDJ Reverb Wash + End-Filter",
+    "filter": "VirtualDJ Filter Sweep (Towards End)",
+    "echo-out": "VirtualDJ Echo-Out Decay",
+    "brake": "VirtualDJ Vinyl Brake Stop",
+    "immediate": "Immediate Cut (Drop on Cue 3)"
 }
 
 class SmartMixApp:
@@ -499,12 +515,18 @@ class SmartMixApp:
         title_b = t_b["title"][:22] + "..." if len(t_b["title"]) > 25 else t_b["title"]
         main_text = f"#{idx+1}  {title_a}  ➔  {title_b}"
 
+        smart_cli = gm.choose_smart_transition(idx, t_a, t_b, len(self.tracks))
+        default_style = CLI_TO_MODE.get(smart_cli, "VirtualDJ Filter Sweep (Towards End)")
+        beats_val = dur_s * (bpm_a / 60.0)
+        bars_val = beats_val / 4.0
+
         if is_immediate:
             detail_text = f"Cue 2 == Cue 3 ({fade_time}) | Immediate Cut | {bpm_a:.1f} ➔ {bpm_b:.1f} BPM"
-            default_style = "Immediate Cut (Drop)"
+            default_style = "Immediate Cut (Drop on Cue 3)"
+        elif dur_s > 10.0:
+            detail_text = f"Cue 2 ({fade_time}) ➔ Cue 3 ({exit_time}) [{dur_s:.1f}s / {bars_val:.0f} Bars - Long] | {bpm_a:.1f} ➔ {bpm_b:.1f} BPM"
         else:
-            detail_text = f"Cue 2 ({fade_time}) ➔ Cue 3 ({exit_time}) [{dur_s:.1f}s] | {bpm_a:.1f} ➔ {bpm_b:.1f} BPM"
-            default_style = "VirtualDJ Filter Sweep (Anti-Beat Clash)"
+            detail_text = f"Cue 2 ({fade_time}) ➔ Cue 3 ({exit_time}) [{dur_s:.1f}s / {bars_val:.1f} Bars] | {bpm_a:.1f} ➔ {bpm_b:.1f} BPM"
 
         if ctk:
             ctk.CTkLabel(info_col, text=main_text, font=ctk.CTkFont(size=12, weight="bold"), anchor="w").pack(anchor="w")
@@ -525,7 +547,7 @@ class SmartMixApp:
                 ctrl_col,
                 values=TRANSITION_MODES,
                 variable=style_var,
-                width=190,
+                width=240,
                 font=ctk.CTkFont(size=11)
             )
             opt.pack(side="left", padx=6)
@@ -694,8 +716,7 @@ class SmartMixApp:
             os.path.join(os.path.dirname(__file__), "smartmix.py"),
             "--mix-name", mix_name,
             "--output-file", out_file,
-            "--mode", "crossfade",
-            "--crossfade-mode", "filter",
+            "--mode", "continuous",
             "--trans-style", trans_style_arg,
             "--target-lufs", str(target_lufs),
             "--true-peak", str(true_peak)

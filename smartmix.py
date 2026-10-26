@@ -66,8 +66,8 @@ def parse_args():
         dest="crossfade_mode",
         type=str,
         default="auto",
-        choices=["auto", "flanger", "reverb", "filter", "echo-out", "brake", "gradual", "equal-power"],
-        help="Global transition style: 'auto' (default: intelligent VirtualDJ FX per transition phrase), 'flanger', 'reverb', 'filter', 'echo-out', 'brake'"
+        choices=["auto", "flanger", "reverb", "filter", "beatgrid", "echo-out", "brake", "gradual", "equal-power"],
+        help="Global transition style: 'auto' (default: intelligent VirtualDJ FX per transition phrase), 'flanger', 'reverb', 'beatgrid', 'filter', 'echo-out', 'brake'"
     )
     parser.add_argument(
         "--filter-start",

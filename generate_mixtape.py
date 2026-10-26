@@ -90,8 +90,8 @@ def parse_args():
         dest="crossfade_mode",
         type=str,
         default="auto",
-        choices=["auto", "flanger", "reverb", "filter", "echo-out", "brake", "gradual", "equal-power"],
-        help="Global transition style: 'auto' (default: smart VirtualDJ FX analysis per transition phrase), 'flanger', 'reverb', 'filter', 'echo-out', 'brake'"
+        choices=["auto", "flanger", "reverb", "filter", "beatgrid", "echo-out", "brake", "gradual", "equal-power"],
+        help="Global transition style: 'auto' (default: smart VirtualDJ FX analysis per transition phrase), 'flanger', 'reverb', 'beatgrid', 'filter', 'echo-out', 'brake'"
     )
     parser.add_argument(
         "--filter-start",
@@ -350,6 +350,11 @@ def choose_smart_transition(i, t_a, t_b, total_tracks=None):
     dur = (t_a["cue_exit"] - t_a["cue_fade"]) if (has_fade and has_exit) else 16.0
     if dur <= 0.15:
         return "immediate"
+    # Specific rule: Entourage into Brandy (or Omarion) gets VirtualDJ BeatGrid!
+    title_a = (t_a.get("title") or "").lower()
+    artist_a = (t_a.get("artist") or "").lower()
+    if "entourage" in title_a or "omarion" in artist_a:
+        return "beatgrid"
     elif dur < 5.0:
         return "filter"
     elif dur > 12.0:
@@ -369,6 +374,8 @@ def get_transition_mode(idx, global_mode, custom_styles, t_a=None, t_b=None, tot
         return "flanger"
     if global_mode == "reverb":
         return "reverb"
+    if global_mode == "beatgrid":
+        return "beatgrid"
     if global_mode == "brake":
         return "brake"
     if global_mode == "equal-power":
@@ -511,6 +518,90 @@ def apply_dj_brake(audio, sr=44100, brake_s=1.2):
     out[start_idx:] = brake_out
     return out
 
+def apply_dj_beatgrid(audio, sr=44100, bpm=118.0, start_ratio=0.52, mix=0.92, anti_click_ms=3.0):
+    """
+    VirtualDJ BeatGrid Slicer & Roll Transition Effect.
+    Captures beat-quantized audio slices and loops them in progressive rhythmic
+    subdivisions (1/2-beat -> 1/4-beat -> 1/8-beat stutter roll) slightly before
+    the incoming track's beat drop, building excitement and tension smoothly.
+
+    Features:
+      1. Pre-drop timing: Engages at start_ratio (~52-58% into the transition window),
+         slightly before the incoming song's drums/verse drop.
+      2. Progressive acceleration: Moves musically from half-beat repeat to quarter-beat
+         stutter to eighth-beat roll.
+      3. Anti-click cosine windowing: 3ms cosine crossfade at slice boundaries eliminates
+         harsh digital pops for a punchy, warm sound.
+      4. Studio warmth: Soft saturation (tanh) and gradual mix-in ramp prevent harshness.
+    """
+    n = len(audio)
+    if n < 1024 or bpm <= 0:
+        return audio
+
+    beat_samp = max(256, int(sr * (60.0 / bpm)))
+    start_samp = int(n * np.clip(start_ratio, 0.0, 0.90))
+    effect_len = n - start_samp
+
+    if effect_len < beat_samp:
+        return audio
+
+    out = np.copy(audio)
+    wet = np.copy(audio[start_samp:])
+    m = len(wet)
+
+    fade_samp = max(16, int(sr * (anti_click_ms / 1000.0)))
+
+    cur_pos = 0
+    while cur_pos < m:
+        prog = cur_pos / m
+        if prog < 0.45:
+            slice_len = max(64, beat_samp // 2)   # 1/2 beat slice
+            cycle_len = beat_samp                  # repeat 2 times per beat
+        elif prog < 0.80:
+            slice_len = max(64, beat_samp // 4)   # 1/4 beat slice
+            cycle_len = beat_samp // 2            # repeat 2 times per half beat
+        else:
+            slice_len = max(32, beat_samp // 8)   # 1/8 beat slice
+            cycle_len = beat_samp // 4            # repeat 2 times per quarter beat
+
+        src_start = cur_pos
+        src_end = min(m, src_start + slice_len)
+        chunk = wet[src_start:src_end]
+        actual_chunk_len = len(chunk)
+
+        if actual_chunk_len == 0:
+            break
+
+        # Anti-click windowing: smooth cosine fade at slice boundaries
+        env = np.ones(actual_chunk_len, dtype=np.float32)
+        env_fade = min(fade_samp, actual_chunk_len // 4)
+        if env_fade > 0:
+            env[:env_fade] = 0.5 * (1.0 - np.cos(np.pi * np.arange(env_fade) / env_fade))
+            env[-env_fade:] = 0.5 * (1.0 + np.cos(np.pi * np.arange(env_fade) / env_fade))
+        chunk_windowed = chunk * env[:, None]
+
+        # Fill cycle_len with repeats of this slice
+        rep_end = min(m, cur_pos + cycle_len)
+        fill_pos = cur_pos
+        while fill_pos < rep_end:
+            copy_len = min(actual_chunk_len, rep_end - fill_pos)
+            wet[fill_pos:fill_pos + copy_len] = chunk_windowed[:copy_len]
+            fill_pos += copy_len
+
+        cur_pos += cycle_len
+
+    # Soft saturation to smooth transients
+    wet = np.tanh(wet * 1.15) / 1.15
+
+    # Smooth entrance ramp-in
+    ramp_in = min(int(sr * 0.06), m // 4)
+    mix_env = np.ones(m, dtype=np.float32) * mix
+    if ramp_in > 0:
+        mix_env[:ramp_in] = np.linspace(0.0, mix, ramp_in)
+
+    out[start_samp:] = audio[start_samp:] * (1.0 - mix_env[:, None]) + wet * mix_env[:, None]
+    return out.astype(np.float32)
+
 def apply_dj_filter_hpf_in(audio, sr=44100, f_start=280.0, f_end=20.0, open_s=1.5):
     """
     Musical opening sweep on incoming Track B:
@@ -568,6 +659,8 @@ def blend_continuous(a_seg, b_seg, sr=44100, fx="filter", bpm=118.0, initial_b_g
         a_fx = apply_dj_flanger(a_seg, sr=sr, depth_ms=2.8, rate_hz=0.22, feedback=0.45, mix=0.60)
     elif fx == "reverb" and dur_s > 4.0:
         a_fx = apply_dj_reverb(a_seg, sr=sr, decay=0.65, mix=0.50)
+    elif fx == "beatgrid":
+        a_fx = apply_dj_beatgrid(a_seg, sr=sr, bpm=bpm, start_ratio=0.52, mix=0.92)
     elif fx == "echo-out":
         return blend_echo_out(a_seg, b_seg, sr=sr, bpm=bpm)
     elif fx == "brake":
@@ -1012,6 +1105,8 @@ def render_continuous_mix(tracks, args, output_file):
             blended = blend_continuous(a_trans, b_trans, sr=sr, fx="flanger", bpm=bpm_a, filter_start_ratio=filter_start)
         elif mode == "reverb":
             blended = blend_continuous(a_trans, b_trans, sr=sr, fx="reverb", bpm=bpm_a, filter_start_ratio=filter_start)
+        elif mode == "beatgrid":
+            blended = blend_continuous(a_trans, b_trans, sr=sr, fx="beatgrid", bpm=bpm_a, filter_start_ratio=filter_start)
         elif mode == "echo-out":
             blended = blend_echo_out(a_trans, b_trans, sr=sr, bpm=bpm_a)
         elif mode == "brake":
@@ -1192,6 +1287,8 @@ def render_transition_preview(t_a, t_b, mode="gradual", pre_s=3.0, post_s=3.0, s
         blended = blend_continuous(a_trans, b_trans, sr=sr, fx="flanger", bpm=bpm_a)
     elif mode == "reverb":
         blended = blend_continuous(a_trans, b_trans, sr=sr, fx="reverb", bpm=bpm_a)
+    elif mode == "beatgrid":
+        blended = blend_continuous(a_trans, b_trans, sr=sr, fx="beatgrid", bpm=bpm_a)
     elif mode == "echo-out":
         blended = blend_echo_out(a_trans, b_trans, sr=sr, bpm=bpm_a)
     elif mode == "brake":

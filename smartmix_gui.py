@@ -51,6 +51,7 @@ if ctk is not None:
 TRANSITION_MODES = [
     "VirtualDJ Flanger + End-Filter (Best for Long)",
     "VirtualDJ Reverb Wash + End-Filter",
+    "VirtualDJ BeatGrid Slicer & Roll (Build-up)",
     "VirtualDJ Filter Sweep (Towards End)",
     "VirtualDJ Echo-Out Decay",
     "VirtualDJ Vinyl Brake Stop",
@@ -60,11 +61,14 @@ TRANSITION_MODES = [
 MODE_TO_CLI = {
     "VirtualDJ Flanger + End-Filter (Best for Long)": "flanger",
     "VirtualDJ Reverb Wash + End-Filter": "reverb",
+    "VirtualDJ BeatGrid Slicer & Roll (Build-up)": "beatgrid",
     "VirtualDJ Filter Sweep (Towards End)": "filter",
     "VirtualDJ Echo-Out Decay": "echo-out",
     "VirtualDJ Vinyl Brake Stop": "brake",
     "Immediate Cut (Drop on Cue 3)": "immediate",
     # Aliases
+    "BeatGrid": "beatgrid",
+    "VirtualDJ BeatGrid": "beatgrid",
     "Auto (Smart VirtualDJ FX & End-Filter)": "auto",
     "VirtualDJ Filter Sweep (Anti-Beat Clash)": "filter",
     "Gradual DJ Crossfade": "filter",
@@ -76,6 +80,7 @@ MODE_TO_CLI = {
 CLI_TO_MODE = {
     "flanger": "VirtualDJ Flanger + End-Filter (Best for Long)",
     "reverb": "VirtualDJ Reverb Wash + End-Filter",
+    "beatgrid": "VirtualDJ BeatGrid Slicer & Roll (Build-up)",
     "filter": "VirtualDJ Filter Sweep (Towards End)",
     "echo-out": "VirtualDJ Echo-Out Decay",
     "brake": "VirtualDJ Vinyl Brake Stop",

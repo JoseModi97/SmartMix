@@ -147,6 +147,7 @@ SmartMix replaces traditional volume-ducking crossfaders with a studio-grade **C
 - Over long transitions (e.g. 8 bars / 32 beats, $12\text{–}20\text{s}$), SmartMix utilizes the signature **VirtualDJ Deck FX** (highlighted in VirtualDJ's effects menu):
   - **🎛️ VirtualDJ Flanger:** Modulated comb-filter jet sweep that builds intense energy and movement across the transition phrase.
   - **🌌 VirtualDJ Space Reverb Wash:** Expands the outgoing track into a wide, lush spatial ambient cloud before Cue 3.
+  - **🥁 VirtualDJ BeatGrid Slicer & Roll:** Quantized rhythmic slicer that loops audio in progressive 1/2-beat $\to$ 1/4-beat $\to$ 1/8-beat rolls slightly before the incoming track's drop, with 3ms anti-click windowing and studio warmth.
   - **🔁 VirtualDJ Echo-Out:** Tempo-synced dub delay freeze catching the final phrase and decaying gracefully into Track B.
   - **🛑 VirtualDJ Vinyl Brake:** Turntable motor stop deceleration on sudden cuts and drops.
 
@@ -177,6 +178,7 @@ SmartMix transitions are built strictly around your VirtualDJ Hotcues:
 - **`auto` (Default):** Smart playlist analysis: automatically applies **Flanger + End-Filter** or **Reverb Wash + End-Filter** on long transitions (>12s), and clean End-Filter sweeps on short transitions.
 - **`flanger`:** VirtualDJ Flanger jet comb-filter build + End-Filter sweep.
 - **`reverb`:** VirtualDJ Space Reverb ambient wash + End-Filter sweep.
+- **`beatgrid`:** VirtualDJ BeatGrid slicer & roll build-up + End-Filter sweep.
 - **`filter`:** VirtualDJ Color FX Filter sweep towards the end.
 - **`echo-out`:** Tempo-synced dub delay freeze.
 - **`brake`:** Turntable vinyl brake stop.

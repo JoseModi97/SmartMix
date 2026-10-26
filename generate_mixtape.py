@@ -518,32 +518,40 @@ def apply_dj_brake(audio, sr=44100, brake_s=1.2):
     out[start_idx:] = brake_out
     return out
 
-def apply_dj_beatgrid(audio, sr=44100, bpm=118.0, start_ratio=0.52, mix=0.92, anti_click_ms=3.0):
+def apply_dj_beatgrid(audio, sr=44100, bpm=118.0, start_ratio=0.78, lead_beats=None, mix=0.95, anti_click_ms=2.5):
     """
     VirtualDJ BeatGrid Slicer & Roll Transition Effect.
-    Captures beat-quantized audio slices and loops them in progressive rhythmic
-    subdivisions (1/2-beat -> 1/4-beat -> 1/8-beat stutter roll) slightly before
-    the incoming track's beat drop, building excitement and tension smoothly.
+    Engages SHORTLY before the incoming track's beat drop (in the final ~1-2 bars / 3-4 beats
+    of the outgoing track's exit), delivering a tight, crisp rhythmic build-up right before Cue 3.
 
     Features:
-      1. Pre-drop timing: Engages at start_ratio (~52-58% into the transition window),
-         slightly before the incoming song's drums/verse drop.
-      2. Progressive acceleration: Moves musically from half-beat repeat to quarter-beat
-         stutter to eighth-beat roll.
-      3. Anti-click cosine windowing: 3ms cosine crossfade at slice boundaries eliminates
-         harsh digital pops for a punchy, warm sound.
-      4. Studio warmth: Soft saturation (tanh) and gradual mix-in ramp prevent harshness.
+      1. Short Pre-Drop Timing: Engages shortly before the beat starts (at start_ratio ~0.78 or final ~3-4 beats).
+         The outgoing track grooves naturally for the majority of the exit, then stutters right before the drop.
+      2. Tight Progressive Acceleration: Moves from 1/4-beat stutter repeat to 1/8-beat rapid roll.
+      3. Anti-Click Cosine Windowing: 2.5ms cosine crossfade at slice boundaries eliminates clicks.
+      4. Studio Warmth: Soft analog saturation (tanh) and 25ms entrance ramp for clean, warm presence.
     """
     n = len(audio)
     if n < 1024 or bpm <= 0:
         return audio
 
     beat_samp = max(256, int(sr * (60.0 / bpm)))
-    start_samp = int(n * np.clip(start_ratio, 0.0, 0.90))
-    effect_len = n - start_samp
 
+    if lead_beats is not None and lead_beats > 0:
+        lead_samp = int(lead_beats * beat_samp)
+        start_samp = max(0, n - lead_samp)
+    else:
+        # Default start_ratio ~0.78 = final ~22% of transition window (shortly before the beat)
+        clamped_ratio = max(0.50, min(0.85, start_ratio))
+        start_samp = int(n * clamped_ratio)
+        # Ensure it lasts around 3 to 4 beats at most
+        if n - start_samp > 4 * beat_samp:
+            start_samp = max(0, n - 4 * beat_samp)
+
+    effect_len = n - start_samp
     if effect_len < beat_samp:
-        return audio
+        start_samp = max(0, n - beat_samp)
+        effect_len = n - start_samp
 
     out = np.copy(audio)
     wet = np.copy(audio[start_samp:])
@@ -554,15 +562,15 @@ def apply_dj_beatgrid(audio, sr=44100, bpm=118.0, start_ratio=0.52, mix=0.92, an
     cur_pos = 0
     while cur_pos < m:
         prog = cur_pos / m
-        if prog < 0.45:
-            slice_len = max(64, beat_samp // 2)   # 1/2 beat slice
-            cycle_len = beat_samp                  # repeat 2 times per beat
-        elif prog < 0.80:
-            slice_len = max(64, beat_samp // 4)   # 1/4 beat slice
-            cycle_len = beat_samp // 2            # repeat 2 times per half beat
+        # Progressive roll shortly before drop:
+        # First 50% of the short window: 1/4 beat stutter
+        # Final 50%: 1/8 beat rapid roll into the drop
+        if prog < 0.50:
+            slice_len = max(32, beat_samp // 4)   # 1/4 beat slice
+            cycle_len = beat_samp // 2            # repeat twice per half-beat
         else:
-            slice_len = max(32, beat_samp // 8)   # 1/8 beat slice
-            cycle_len = beat_samp // 4            # repeat 2 times per quarter beat
+            slice_len = max(16, beat_samp // 8)   # 1/8 beat slice
+            cycle_len = beat_samp // 4            # repeat twice per quarter-beat
 
         src_start = cur_pos
         src_end = min(m, src_start + slice_len)
@@ -593,8 +601,8 @@ def apply_dj_beatgrid(audio, sr=44100, bpm=118.0, start_ratio=0.52, mix=0.92, an
     # Soft saturation to smooth transients
     wet = np.tanh(wet * 1.15) / 1.15
 
-    # Smooth entrance ramp-in
-    ramp_in = min(int(sr * 0.06), m // 4)
+    # Smooth entrance ramp-in (25ms)
+    ramp_in = min(int(sr * 0.025), m // 4)
     mix_env = np.ones(m, dtype=np.float32) * mix
     if ramp_in > 0:
         mix_env[:ramp_in] = np.linspace(0.0, mix, ramp_in)
@@ -660,7 +668,7 @@ def blend_continuous(a_seg, b_seg, sr=44100, fx="filter", bpm=118.0, initial_b_g
     elif fx == "reverb" and dur_s > 4.0:
         a_fx = apply_dj_reverb(a_seg, sr=sr, decay=0.65, mix=0.50)
     elif fx == "beatgrid":
-        a_fx = apply_dj_beatgrid(a_seg, sr=sr, bpm=bpm, start_ratio=0.52, mix=0.92)
+        a_fx = apply_dj_beatgrid(a_seg, sr=sr, bpm=bpm, start_ratio=0.78, mix=0.95)
     elif fx == "echo-out":
         return blend_echo_out(a_seg, b_seg, sr=sr, bpm=bpm)
     elif fx == "brake":
@@ -1106,7 +1114,7 @@ def render_continuous_mix(tracks, args, output_file):
         elif mode == "reverb":
             blended = blend_continuous(a_trans, b_trans, sr=sr, fx="reverb", bpm=bpm_a, filter_start_ratio=filter_start)
         elif mode == "beatgrid":
-            blended = blend_continuous(a_trans, b_trans, sr=sr, fx="beatgrid", bpm=bpm_a, filter_start_ratio=filter_start)
+            blended = blend_continuous(a_trans, b_trans, sr=sr, fx="beatgrid", bpm=bpm_a, filter_start_ratio=max(filter_start, 0.70))
         elif mode == "echo-out":
             blended = blend_echo_out(a_trans, b_trans, sr=sr, bpm=bpm_a)
         elif mode == "brake":

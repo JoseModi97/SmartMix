@@ -350,11 +350,6 @@ def choose_smart_transition(i, t_a, t_b, total_tracks=None):
     dur = (t_a["cue_exit"] - t_a["cue_fade"]) if (has_fade and has_exit) else 16.0
     if dur <= 0.15:
         return "immediate"
-    # Specific rule: Entourage into Brandy (or Omarion) gets VirtualDJ BeatGrid!
-    title_a = (t_a.get("title") or "").lower()
-    artist_a = (t_a.get("artist") or "").lower()
-    if "entourage" in title_a or "omarion" in artist_a:
-        return "beatgrid"
     elif dur < 5.0:
         return "filter"
     elif dur > 12.0:
